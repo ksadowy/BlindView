@@ -6,26 +6,13 @@ net = cv2.dnn.readNet("yolov3-tiny.weights", "yolov3.cfg")
 layer_names = net.getLayerNames()
 output_layers = [layer_names[i - 1] for i in net.getUnconnectedOutLayers()]
 
-classes = ["person", "bicycle", "car", "motorbike", "aeroplane", "bus", "train", 
-           "truck", "boat", "traffic light", "fire hydrant", "stop sign", "parking meter", 
-           "bench", "bird", "cat", "dog", "horse", "sheep", "cow", "elephant", 
-           "bear", "zebra", "giraffe", "backpack", "umbrella", "handbag", "tie", 
-           "suitcase", "frisbee", "skis", "snowboard", "sports ball", "kite", 
-           "baseball bat", "baseball glove", "skateboard", "surfboard", "tennis racket", 
-           "bottle", "wine glass", "cup", "fork", "knife", "spoon", "bowl", 
-           "banana", "apple", "sandwich", "orange", "broccoli", "carrot", "hot dog", 
-           "pizza", "donut", "cake", "chair", "couch", "potted plant", "bed", 
-           "dining table", "toilet", "TV", "laptop", "mouse", "remote", "keyboard", 
-           "cell phone", "microwave", "oven", "toaster", "sink", "refrigerator", 
-           "book", "clock", "vase", "scissors", "teddy bear", "hair dryer", 
-           "toothbrush"]
-
-relevant_class_ids = [0, 14, 56, 59]
+classes = ["person"]
+relevant_class_ids = [0]
 
 pipeline = rs.pipeline()
 config = rs.config()
-config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
-config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
+config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 15)
+config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 15)
 
 pipeline.start(config)
 
@@ -48,12 +35,13 @@ try:
 
         color_image = np.asanyarray(color_frame.get_data())
 
-        blob = cv2.dnn.blobFromImage(color_image, 1 / 255.0, (320, 320), (0, 0, 0), swapRB=True, crop=False)
+        blob = cv2.dnn.blobFromImage(color_image, 1 / 255.0, (416, 416), (0, 0, 0), swapRB=True, crop=False)
         net.setInput(blob)
 
         detections = net.forward(output_layers)
 
         height, width, _ = color_image.shape
+        found_person = False
 
         for output in detections:
             for detection in output:
@@ -61,7 +49,10 @@ try:
                 class_id = np.argmax(scores)
                 confidence = scores[class_id]
 
-                if confidence > 0.5 and class_id in relevant_class_ids:
+                print(f"Class ID: {class_id}, Confidence: {confidence}")
+
+                if confidence > 0.4 and class_id in relevant_class_ids:
+                    found_person = True
                     center_x = int(detection[0] * width)
                     center_y = int(detection[1] * height)
                     obj_width = int(detection[2] * width)
@@ -72,20 +63,22 @@ try:
 
                     cv2.rectangle(color_image, (x, y), (x + obj_width, y + obj_height), (0, 255, 0), 2)
 
-                    object_label = classes[class_id]
-                    direction = get_direction(center_x, width)
-
                     distance = depth_frame.get_distance(center_x, center_y)
 
+                    direction = get_direction(center_x, width)
+
                     if distance > 0:
-                        label = f"{object_label}: {distance:.2f}m, {direction}"
-                        print(f"{object_label} detected at ({center_x}, {center_y}), Distance: {distance:.2f} meters, Direction: {direction}")
+                        label = f"Person: {distance:.2f}m, {direction}"
+                        print(f"Person detected at ({center_x}, {center_y}), Distance: {distance:.2f} meters, Direction: {direction}")
                     else:
-                        label = f"{object_label}: Distance not available, {direction}"
+                        label = f"Person: Distance not available, {direction}"
 
                     cv2.putText(color_image, label, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
 
-        cv2.imshow("Detected Objects", color_image)
+        if not found_person:
+            print("No person detected.")
+
+        cv2.imshow("Detected People", color_image)
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
