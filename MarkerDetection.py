@@ -69,10 +69,11 @@ def detect_markers(frame, depth_frame):
             elif x > 2 * w // 3:
                 direction = "right"
 
-            print(f"{object_name}, Distance: {distance} m, Direction: {direction}")
+            print(f"{object_name}, Distance: {distance}m, Direction: {direction}")
 
             # Rysowanie markerow
             cv2.ellipse(frame, outer_ellipse, (0, 255, 0), 2)
+            cv2.putText(frame, "marker", (100, 100), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0))
             cv2.drawContours(frame, [inner_cnt], -1, (255, 0, 0), 2)
             for c in inner_circles:
                 cv2.drawContours(frame, [c], -1, (255, 255, 0), 2)
