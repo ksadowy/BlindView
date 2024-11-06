@@ -82,7 +82,7 @@ try:
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
-
+#ku_ok
 finally:
     pipeline.stop()
     cv2.destroyAllWindows()
