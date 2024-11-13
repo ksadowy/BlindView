@@ -40,19 +40,27 @@ def detect_markers(frame, depth_frame):
 
     valid_circles = []
     for i, cnt in enumerate(contours):
-        area = cv2.contourArea(cnt)
         perimeter = cv2.arcLength(cnt, True)
-
         if perimeter == 0:
+            continue
+
+        area = cv2.contourArea(cnt)
+
+        # Filtracja konturów o zbyt małej powierzchni i obwodzie
+        if area < 200 or perimeter < 50:
             continue
 
         circularity = 4 * np.pi * area / (perimeter ** 2)
 
-        if 500 < area < 20000 and circularity > 0.7:
+        if circularity > 0.7:
             try:
                 ellipse = cv2.fitEllipse(cnt)
                 (x, y), (MA, ma), _ = ellipse
                 circularity_ellipse = min(MA, ma) / max(MA, ma)
+
+                # Filtracja elips o zbyt krótkich półosiach
+                if min(MA, ma) < 15 or max(MA, ma) < 15:
+                    continue
 
                 if 0.8 <= circularity_ellipse <= 1.2:
                     valid_circles.append((x, y, MA, ma, cnt, ellipse, hierarchy[0][i]))
@@ -76,35 +84,46 @@ def detect_markers(frame, depth_frame):
                 inner_circles.append(ic)
 
         if inner_circles:
-            inner_count = len(inner_circles)
             depth_value = depth_frame.get_distance(int(x), int(y))
             distance = f"{depth_value:.2f}m" if depth_value != 0 else "Unknown"
-
-            if inner_count in marker_dict:
-                marker_name = marker_dict[inner_count]
-                color = (0, 0, 255)
-                detected_markers = True
-            else:
-                marker_name = "Unknown marker"
-                color = (255, 0, 0)
 
             if depth_value > 5:  # Odrzucenie zakłóceń z dużym dystansem
                 continue
 
+            # Rysuj zewnętrzny duży okrąg na czerwono
+            cv2.ellipse(frame, ellipse, (0, 0, 255), 2)
+
+            # Wyszukaj największy wewnętrzny okrąg
+            inner_circles.sort(key=lambda c: c[2] * c[3], reverse=True)
+            largest_inner_circle = inner_circles.pop(0)
+            _, _, inner_MA, inner_ma, inner_cnt, inner_ellipse, _ = largest_inner_circle
+
+            # Rysuj największy wewnętrzny okrąg na niebiesko
+            cv2.ellipse(frame, inner_ellipse, (255, 0, 0), 2)
+
+            # Rysuj mniejsze okręgi wewnątrz największego wewnętrznego okręgu na zielono
             for inner_circle in inner_circles:
-                cX, cY, _, _, _, inner_ellipse, _ = inner_circle
-                cv2.circle(frame, (int(cX), int(cY)), 5, (0, 255, 0), -1)
-                cv2.ellipse(frame, inner_ellipse, (255, 0, 0), 2)  # Możesz zmienić kolor dla wewnętrznych
+                cX, cY, inner_MA, inner_ma, _, inner_ellipse, _ = inner_circle
+                # Filtracja bardzo małych zakłóceń
+                if inner_MA < 15 or inner_ma < 15:
+                    continue
+                cv2.ellipse(frame, inner_ellipse, (0, 255, 0), 2)
 
-            marker_results.append((x, y, inner_count, marker_name, ellipse, inner_circles, color, distance))
+            # Kategoryzacja markerów
+            unique_inner_counts = len(inner_circles)
+            if unique_inner_counts in marker_dict:
+                marker_name = marker_dict[unique_inner_counts]
+                detected_markers = True
+                color = (0, 255, 0)
+            else:
+                marker_name = "Unknown marker"
+                color = (255, 0, 0)
 
-    for x, y, inner_count, marker_name, ellipse, inner_circles, color, distance in marker_results:
-        cv2.ellipse(frame, ellipse, color, 2)
+            marker_results.append((x, y, unique_inner_counts, marker_name, ellipse, color, distance))
 
+    for x, y, inner_count, marker_name, ellipse, color, distance in marker_results:
+        cv2.putText(frame, marker_name, (int(x), int(y) - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
         print(f"{marker_name} with {inner_count} inner circles at ({round(x)}, {round(y)}), Distance: {distance}")
-        if marker_name != "Unknown marker":
-            cv2.putText(frame, f"{marker_name}", (int(x), int(y) - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
-                        (0, 255, 0), 2)  # Tekst w kolorze zielonym
 
     return frame, any([r[2] > 0 for r in marker_results])
 
