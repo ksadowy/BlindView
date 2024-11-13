@@ -13,7 +13,6 @@ paused = False
 
 # Słownik dla markerów
 marker_dict = {
-    1: "Marker 1",
     2: "Marker 2",
     3: "Marker 3",
     4: "Marker 4"
@@ -34,87 +33,80 @@ def detect_markers(frame, depth_frame):
 
     cv2.imshow("Binary Frame", binary)
 
-    contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    contours, hierarchy = cv2.findContours(binary, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
-    large_circles = []
-    for cnt in contours:
+    if contours is None or hierarchy is None:
+        return frame, False
+
+    valid_circles = []
+    for i, cnt in enumerate(contours):
         area = cv2.contourArea(cnt)
-        if 500 < area < 20000:
-            perimeter = cv2.arcLength(cnt, True)
-            if perimeter == 0:
-                continue
-            circularity = 4 * np.pi * area / (perimeter ** 2)
+        perimeter = cv2.arcLength(cnt, True)
 
-            if circularity > 0.7:
+        if perimeter == 0:
+            continue
+
+        circularity = 4 * np.pi * area / (perimeter ** 2)
+
+        if 500 < area < 20000 and circularity > 0.7:
+            try:
                 ellipse = cv2.fitEllipse(cnt)
-                (x, y), (MA, ma), angle = ellipse
+                (x, y), (MA, ma), _ = ellipse
                 circularity_ellipse = min(MA, ma) / max(MA, ma)
 
                 if 0.8 <= circularity_ellipse <= 1.2:
-                    large_circles.append((x, y, MA, ma, cnt, ellipse))
-
-    if len(large_circles) >= 2:
-        largest_circles = sorted(large_circles, key=lambda x: max(x[2], x[3]), reverse=True)[:2]
-        for i, (_, _, _, _, cnt, ellipse) in enumerate(largest_circles):
-            color = (0, 0, 255) if i == 0 else (255, 0, 0)
-            cv2.ellipse(frame, ellipse, color, 2)
-            cv2.drawContours(frame, [cnt], -1, color, 2)
-
-    min_inner_area_factor = 1 / 100
-    max_inner_area_factor = 1 / 10
+                    valid_circles.append((x, y, MA, ma, cnt, ellipse, hierarchy[0][i]))
+            except cv2.error as e:
+                print("Error fitting ellipse: ", e)
+                continue
 
     detected_markers = False
-    for i, (_, _, _, _, outer_cnt, outer_ellipse) in enumerate(large_circles):
-        outer_area = cv2.contourArea(outer_cnt)
-        min_inner_area = outer_area * min_inner_area_factor
-        max_inner_area = outer_area * max_inner_area_factor
+    marker_results = []
+
+    outer_circles = [circle for circle in valid_circles if circle[6][3] == -1]
+
+    for oc in outer_circles:
+        x, y, MA, ma, outer_cnt, ellipse, hier = oc
+        mask = np.zeros_like(binary)
+        cv2.drawContours(mask, [outer_cnt], -1, 255, -1)
 
         inner_circles = []
-        for c in contours:
-            if min_inner_area < cv2.contourArea(c) < max_inner_area:
-                M = cv2.moments(c)
-                if M["m00"] == 0:
-                    continue
-                cX = int(M["m10"] / M["m00"])
-                cY = int(M["m01"] / M["m00"])
-                if cv2.pointPolygonTest(outer_cnt, (cX, cY), False) > 0:
-                    inner_circles.append(c)
-                    cv2.drawContours(frame, [c], -1, (0, 255, 0), 2)  # Zielony dla wewnętrznych okręgów
+        for ix, ic in enumerate(valid_circles):
+            if cv2.pointPolygonTest(outer_cnt, (ic[0], ic[1]), False) >= 0 and ix != outer_circles.index(oc):
+                inner_circles.append(ic)
 
-        if i < 2:
+        if inner_circles:
             inner_count = len(inner_circles)
-            marker_name = marker_dict.get(inner_count, "Unknown marker")
-
-            frame_h, frame_w = frame.shape[:2]
-            direction = "center"
-            (x, y) = (int(outer_ellipse[0][0]), int(outer_ellipse[0][1]))
-            if x < frame_w // 3:
-                direction = "left"
-            elif x > 2 * frame_w // 3:
-                direction = "right"
-
             depth_value = depth_frame.get_distance(int(x), int(y))
-            if depth_value != 0:
-                distance = f"{depth_value:.2f}m"
+            distance = f"{depth_value:.2f}m" if depth_value != 0 else "Unknown"
+
+            if inner_count in marker_dict:
+                marker_name = marker_dict[inner_count]
+                color = (0, 0, 255)
+                detected_markers = True
             else:
-                distance = "Unknown"
+                marker_name = "Unknown marker"
+                color = (255, 0, 0)
 
-            direction_hours = "unknown"
-            if direction == "left":
-                direction_hours = "9 o'clock"
-            elif direction == "right":
-                direction_hours = "3 o'clock"
-            elif direction == "center":
-                direction_hours = "12 o'clock"
+            if depth_value > 5:  # Odrzucenie zakłóceń z dużym dystansem
+                continue
 
-            print(f"{marker_name} with {inner_count} inner circles, Direction: {direction_hours}, Distance: {distance}")
+            for inner_circle in inner_circles:
+                cX, cY, _, _, _, inner_ellipse, _ = inner_circle
+                cv2.circle(frame, (int(cX), int(cY)), 5, (0, 255, 0), -1)
+                cv2.ellipse(frame, inner_ellipse, (255, 0, 0), 2)  # Możesz zmienić kolor dla wewnętrznych
 
-            cv2.putText(frame, f"Marker {inner_count}", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
+            marker_results.append((x, y, inner_count, marker_name, ellipse, inner_circles, color, distance))
+
+    for x, y, inner_count, marker_name, ellipse, inner_circles, color, distance in marker_results:
+        cv2.ellipse(frame, ellipse, color, 2)
+
+        print(f"{marker_name} with {inner_count} inner circles at ({round(x)}, {round(y)}), Distance: {distance}")
+        if marker_name != "Unknown marker":
+            cv2.putText(frame, f"{marker_name}", (int(x), int(y) - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
                         (0, 255, 0), 2)  # Tekst w kolorze zielonym
 
-            detected_markers = True
-
-    return frame, detected_markers
+    return frame, any([r[2] > 0 for r in marker_results])
 
 
 try:
