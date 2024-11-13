@@ -99,22 +99,37 @@ class _MyHomePageState extends State<MyHomePage> {
                 ),
               ),
             ),
+            SizedBox(
+              width: 330, // Szerokość przycisku
+              height: 300, // Wysokość przycisku
+              child: FloatingActionButton(
+                onPressed: _speechToText.isNotListening ? _startListening : _stopListening,
+                tooltip: 'Listen',
+                child: Icon(
+                  _speechToText.isNotListening ? Icons.mic_off : Icons.mic,
+                  size: 40, // Rozmiar ikony wewnątrz przycisku
+                ),
+              ),
+            ),
+
             ElevatedButton(
-              child: Text("Komendy"),
-              //style: ElevatedButton.styleFrom(primary: Colors.blue),
+              child: Text(
+                "Komendy",
+                style: TextStyle(fontSize: 18), // Ustawienie rozmiaru tekstu
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue, // Kolor tła przycisku
+                padding: EdgeInsets.symmetric(horizontal: 128, vertical: 64), // Rozmiar przycisku
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12), // Zaokrąglenie rogów przycisku
+                ),
+              ),
               onPressed: () {
                 Navigator.push(context, MaterialPageRoute(builder: (context) => Test()));
-              }
+              },
             )
           ],
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed:
-        // If not yet listening for speech start, otherwise stop
-        _speechToText.isNotListening ? _startListening : _stopListening,
-        tooltip: 'Listen',
-        child: Icon(_speechToText.isNotListening ? Icons.mic_off : Icons.mic),
       ),
     );
   }
