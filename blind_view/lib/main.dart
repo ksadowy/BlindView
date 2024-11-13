@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:speech_to_text/speech_to_text.dart';
+import 'test.dart';
 
 void main() {
   runApp(MyApp());
@@ -67,7 +68,8 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Speech Demo'),
+        title: Text('Wydawanie komend'),
+
       ),
       body: Center(
         child: Column(
@@ -76,7 +78,7 @@ class _MyHomePageState extends State<MyHomePage> {
             Container(
               padding: EdgeInsets.all(16),
               child: Text(
-                'Recognized words:',
+                'Przechwytywanie mowy:',
                 style: TextStyle(fontSize: 20.0),
               ),
             ),
@@ -97,6 +99,13 @@ class _MyHomePageState extends State<MyHomePage> {
                 ),
               ),
             ),
+            ElevatedButton(
+              child: Text("Komendy"),
+              //style: ElevatedButton.styleFrom(primary: Colors.blue),
+              onPressed: () {
+                Navigator.push(context, MaterialPageRoute(builder: (context) => Test()));
+              }
+            )
           ],
         ),
       ),
