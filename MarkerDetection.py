@@ -2,79 +2,119 @@ import cv2
 import pyrealsense2 as rs
 import numpy as np
 
+# Inicjalizacja kamery RealSense
 pipeline = rs.pipeline()
 config = rs.config()
 config.enable_stream(rs.stream.depth, 1280, 720, rs.format.z16, 30)
 config.enable_stream(rs.stream.color, 1280, 720, rs.format.bgr8, 30)
 pipeline.start(config)
 
-object_dict = {1: "Object 1", 2: "Object 2", 3: "Object 3", 4: "Object 4"}
-
 paused = False
+
+# Słownik dla markerów
+marker_dict = {
+    1: "Marker 1",
+    2: "Marker 2",
+    3: "Marker 3",
+    4: "Marker 4"
+}
 
 
 def detect_markers(frame, depth_frame):
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    _, binary = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY_INV)
+    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+    binary = cv2.adaptiveThreshold(
+        blurred,
+        255,
+        cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+        cv2.THRESH_BINARY_INV,
+        11,
+        2
+    )
 
     cv2.imshow("Binary Frame", binary)
 
     contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-    markers = []
+    large_circles = []
     for cnt in contours:
         area = cv2.contourArea(cnt)
+        if 500 < area < 20000:
+            perimeter = cv2.arcLength(cnt, True)
+            if perimeter == 0:
+                continue
+            circularity = 4 * np.pi * area / (perimeter ** 2)
 
-        if area < 1000 or area > 10000:
-            continue
+            if circularity > 0.7:
+                ellipse = cv2.fitEllipse(cnt)
+                (x, y), (MA, ma), angle = ellipse
+                circularity_ellipse = min(MA, ma) / max(MA, ma)
 
-        if len(cnt) >= 5:
-            ellipse = cv2.fitEllipse(cnt)
-            (x, y), (MA, ma), angle = ellipse
-            circularity = min(MA, ma) / max(MA, ma)
+                if 0.8 <= circularity_ellipse <= 1.2:
+                    large_circles.append((x, y, MA, ma, cnt, ellipse))
 
-            if circularity >= 0.8:
-                markers.append((x, y, MA, ma, cnt, ellipse))
+    if len(large_circles) >= 2:
+        largest_circles = sorted(large_circles, key=lambda x: max(x[2], x[3]), reverse=True)[:2]
+        for i, (_, _, _, _, cnt, ellipse) in enumerate(largest_circles):
+            color = (0, 0, 255) if i == 0 else (255, 0, 0)
+            cv2.ellipse(frame, ellipse, color, 2)
+            cv2.drawContours(frame, [cnt], -1, color, 2)
 
-    concentric_markers = []
-    for i, (x1, y1, MA1, ma1, cnt1, ellipse1) in enumerate(markers):
-        for j, (x2, y2, MA2, ma2, cnt2, ellipse2) in enumerate(markers):
-            if i != j and MA1 > MA2:
-                dist = np.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
-                if dist < MA1 / 4:
-                    concentric_markers.append((x1, y1, MA1, ma1, cnt1, cnt2, ellipse1))
+    min_inner_area_factor = 1 / 100
+    max_inner_area_factor = 1 / 10
 
-    for x, y, MA, ma, outer_cnt, inner_cnt, outer_ellipse in concentric_markers:
-        inner_circles = [
-            c for c in contours
-            if cv2.contourArea(c) < cv2.contourArea(outer_cnt) / 4
-               and cv2.pointPolygonTest(outer_cnt, (int(c[0][0][0]), int(c[0][0][1])), False) >= 0
-        ]
-        inner_count = len(inner_circles)
+    detected_markers = False
+    for i, (_, _, _, _, outer_cnt, outer_ellipse) in enumerate(large_circles):
+        outer_area = cv2.contourArea(outer_cnt)
+        min_inner_area = outer_area * min_inner_area_factor
+        max_inner_area = outer_area * max_inner_area_factor
 
-        object_name = object_dict.get(inner_count, "Unknown object")
+        inner_circles = []
+        for c in contours:
+            if min_inner_area < cv2.contourArea(c) < max_inner_area:
+                M = cv2.moments(c)
+                if M["m00"] == 0:
+                    continue
+                cX = int(M["m10"] / M["m00"])
+                cY = int(M["m01"] / M["m00"])
+                if cv2.pointPolygonTest(outer_cnt, (cX, cY), False) > 0:
+                    inner_circles.append(c)
+                    cv2.drawContours(frame, [c], -1, (0, 255, 0), 2)  # Zielony dla wewnętrznych okręgów
 
-        h, w = frame.shape[:2]
-        if 0 <= int(x) < w and 0 <= int(y) < h:
-            depth_value = depth_frame.get_distance(int(x), int(y))
-            distance = depth_value if depth_value != 0 else "Unknown"
+        if i < 2:
+            inner_count = len(inner_circles)
+            marker_name = marker_dict.get(inner_count, "Unknown marker")
 
+            frame_h, frame_w = frame.shape[:2]
             direction = "center"
-            if x < w // 3:
+            (x, y) = (int(outer_ellipse[0][0]), int(outer_ellipse[0][1]))
+            if x < frame_w // 3:
                 direction = "left"
-            elif x > 2 * w // 3:
+            elif x > 2 * frame_w // 3:
                 direction = "right"
 
-            print(f"{object_name}, Distance: {distance}m, Direction: {direction}")
+            depth_value = depth_frame.get_distance(int(x), int(y))
+            if depth_value != 0:
+                distance = f"{depth_value:.2f}m"
+            else:
+                distance = "Unknown"
 
-            cv2.ellipse(frame, outer_ellipse, (0, 255, 0), 2)
-            cv2.putText(frame, f"Marker {inner_count}", (int(x), int(y) - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
-                        (0, 255, 0), 2)
-            cv2.drawContours(frame, [inner_cnt], -1, (255, 0, 0), 2)
-            for c in inner_circles:
-                cv2.drawContours(frame, [c], -1, (255, 255, 0), 2)
+            direction_hours = "unknown"
+            if direction == "left":
+                direction_hours = "9 o'clock"
+            elif direction == "right":
+                direction_hours = "3 o'clock"
+            elif direction == "center":
+                direction_hours = "12 o'clock"
 
-    return frame
+            print(f"{marker_name} with {inner_count} inner circles, Direction: {direction_hours}, Distance: {distance}")
+
+            cv2.putText(frame, f"Marker {inner_count}", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
+                        (0, 255, 0), 2)  # Tekst w kolorze zielonym
+
+            detected_markers = True
+
+    return frame, detected_markers
 
 
 try:
@@ -90,9 +130,12 @@ try:
             depth_image = np.asanyarray(depth_frame.get_data())
             color_image = np.asanyarray(color_frame.get_data())
 
-            output_image = detect_markers(color_image, depth_frame)
-
+            output_image, found_marker = detect_markers(color_image, depth_frame)
             cv2.imshow('Marker Detection', output_image)
+
+            if found_marker:
+                paused = True  # Pauza po wykryciu markera
+                print("Paused for inspection.")
 
         key = cv2.waitKey(1) & 0xFF
         if key == ord('q'):
