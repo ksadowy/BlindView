@@ -1,8 +1,11 @@
+import 'package:flutter_tts/flutter_tts.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 
 class SpeechService {
   final SpeechToText _speechToText = SpeechToText();
+  final FlutterTts _flutterTts = FlutterTts();
+
   bool isListening = false;
   bool isAvailable = false;
 
@@ -25,7 +28,14 @@ class SpeechService {
     isListening = false;
   }
 
+  Future<void> speak(String text) async {
+    await _flutterTts.setLanguage("en-US"); // Ustawienie języka
+    await _flutterTts.setPitch(1.0);       // Wysokość głosu
+    await _flutterTts.speak(text);
+  }
+
   void dispose() {
     _speechToText.stop();
+    _flutterTts.stop();
   }
 }

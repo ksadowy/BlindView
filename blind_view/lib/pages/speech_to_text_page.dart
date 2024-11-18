@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../services/speech_service.dart';
-import '../../widgets/speech_control.dart';
-import './test_page.dart';
+import '../services/speech_service.dart';
+import '../widgets/speech_control.dart';
+import 'test_page.dart';
 
 class SpeechToTextPage extends StatefulWidget {
   const SpeechToTextPage({Key? key}) : super(key: key);
@@ -63,6 +63,11 @@ class _SpeechToTextPageState extends State<SpeechToTextPage> {
                 });
               },
               onStop: _speechService.stopListening,
+              onSpeak: () {
+                _speechService.speak(_lastWords.isNotEmpty
+                    ? _lastWords
+                    : "No text available to speak");
+              },
             ),
             ElevatedButton(
               onPressed: () {
