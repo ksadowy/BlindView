@@ -20,6 +20,10 @@ marker_dict = {
     5: "Marker 5"
 }
 
+# Metry na kroki
+def meters_to_steps(distance):
+    return round(distance * 1.31)
+
 
 def detect_markers(frame, depth_frame):
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -110,8 +114,8 @@ def detect_markers(frame, depth_frame):
             detected_markers = True
 
     for x, y, inner_count, marker_name, ellipse, color, distance in marker_results:
-        cv2.putText(frame, marker_name, (int(x), int(y) - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
-        print(f"{marker_name} with {inner_count} inner circles at ({round(x)}, {round(y)}), Distance: {distance}")
+        cv2.putText(frame, marker_name, (int(x), int(y) - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
+        print(f"{marker_name} at ({round(x)}, {round(y)}), Distance: {distance}, {meters_to_steps(depth_value)} steps - {inner_count} inner circles")
 
     return frame, detected_markers
 
@@ -134,7 +138,7 @@ try:
 
             if found_marker:
                 paused = True  # Pauza po wykryciu markera
-                print("Paused for inspection.")
+                print("Marker found. Paused")
 
         key = cv2.waitKey(1) & 0xFF
         if key == ord('q'):
