@@ -20,10 +20,6 @@ marker_dict = {
     5: "Marker 5"
 }
 
-# Metry na kroki
-def meters_to_steps(distance):
-    return round(distance * 1.31)
-
 
 def detect_markers(frame, depth_frame):
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -77,14 +73,14 @@ def detect_markers(frame, depth_frame):
     detected_markers = False
     marker_results = []
 
-    # Sortowanie okręgów wg wielkości (największy najpierw)
+    # Sortowanie okręgów wg wielkości
     valid_circles.sort(key=lambda c: c[2] * c[3], reverse=True)
 
     # Ignorowanie największego okręgu
     if valid_circles:
-        valid_circles.pop(0)  # Usunięcie największego okręgu z listy
+        valid_circles.pop(0)
 
-    # Zaznaczenie drugiego największego okręgu na czerwono (teraz największego na liście)
+    # Zaznaczenie drugiego największego okręgu na czerwono
     if valid_circles:
         second_largest_circle = valid_circles.pop(0)
         cv2.ellipse(frame, second_largest_circle[5], (0, 0, 255), 2)
@@ -93,10 +89,10 @@ def detect_markers(frame, depth_frame):
     for circle in valid_circles:
         cv2.ellipse(frame, circle[5], (0, 255, 0), 2)
 
-    # Zakładam, że detekcja odległości i markerów, bazuje na drugim największym okręgu
     if 'second_largest_circle' in locals():
         depth_value = depth_frame.get_distance(int(second_largest_circle[0]), int(second_largest_circle[1]))
         distance = f"{depth_value:.2f}m" if depth_value != 0 else "Unknown"
+        steps = f"{round(depth_value * 1.31)} steps" if depth_value != 0 else "Unknown"
 
         if depth_value <= 5:  # Odrzucenie zakłóceń z dużym dystansem
             unique_inner_counts = len(valid_circles) // 2  # Dzielenie na 2, aby uniknąć duplikatów
@@ -115,7 +111,7 @@ def detect_markers(frame, depth_frame):
 
     for x, y, inner_count, marker_name, ellipse, color, distance in marker_results:
         cv2.putText(frame, marker_name, (int(x), int(y) - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
-        print(f"{marker_name} at ({round(x)}, {round(y)}), Distance: {distance}, {meters_to_steps(depth_value)} steps - {inner_count} inner circles")
+        print(f"{marker_name} at ({round(x)}, {round(y)}), Distance: {distance}, {steps} - {inner_count} circles")
 
     return frame, detected_markers
 
