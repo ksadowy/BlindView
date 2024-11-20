@@ -16,8 +16,7 @@ marker_dict = {
     1: "Marker 1",
     2: "Marker 2",
     3: "Marker 3",
-    4: "Marker 4",
-    5: "Marker 5"
+    4: "Marker 4"
 }
 
 
