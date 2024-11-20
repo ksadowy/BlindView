@@ -73,7 +73,7 @@ class _SpeechToTextPageState extends State<SpeechToTextPage> {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const TestPage()),
+                  MaterialPageRoute(builder: (context) => const MyTest()),
                 );
               },
               style: ElevatedButton.styleFrom(

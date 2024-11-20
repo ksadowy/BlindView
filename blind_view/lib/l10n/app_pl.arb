@@ -1,0 +1,10 @@
+{
+    "@@locate": "pl",
+    "language": "Polski",
+    "@language": {
+        "description": "Wybrany język"
+    },
+    "helloWorld": "Witaj świecie",
+    "twoLanguages": "Aplikacja posiada 2 języki",
+    "changeLanguage": "Zmień język"
+}
