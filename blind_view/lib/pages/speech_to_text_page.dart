@@ -79,12 +79,12 @@ class _SpeechToTextPageState extends State<SpeechToTextPage> {
                     },
                   ),
                   ElevatedButton(
+                    //don't press for now, it crashes if you do
                     onPressed: () {
                       Navigator.push(
                         context,
                         MaterialPageRoute(builder: (context) =>
-                            MyTest(selectedLocal: snapshot.data ??
-                                const Locale('en'))),
+                            MyTest(selectedLocal: snapshot.data ?? const Locale('en'))),
                       );
                     },
                     style: ElevatedButton.styleFrom(

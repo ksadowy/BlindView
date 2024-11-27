@@ -32,19 +32,23 @@ class MyTest extends StatefulWidget{
 
 class _TestTTS extends State<MyTest>{
 
-  FlutterTts _flutterTts = FlutterTts();
+  /*FlutterTts _flutterTts = FlutterTts();
   List<Map> _voices = [];
   List<Map> _voices2 = [];
   Map? _currentVoice;
-  late Config configuration;
+  late Config configuration;*/
   //configuration.SetLanguage("pl-PL");
+
+  List<Locale> allLocales = L10n.locals;
 
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
-    GenerateStreams.languageStream.add(const Locale('en)'));
+    GenerateStreams.languageStream.add(const Locale('en'));
+/*
     initTTS();
+*/
   }
 
   void dispose(){
@@ -52,12 +56,12 @@ class _TestTTS extends State<MyTest>{
     super.dispose();
   }
 
-  void initTTS() {
+  /*void initTTS() {
     _flutterTts.getVoices.then((data){
       try{
         _voices = List<Map>.from(data);
 
-        /*print(_voices);*/
+        *//*print(_voices);*//*
         setState(() {
           _voices = _voices.where((_voice) => _voice["name"].contains("en")).toList();
           //_voices2 = _voices.where((_voice) => _voice["name"].contains("pl")).toList();
@@ -70,11 +74,11 @@ class _TestTTS extends State<MyTest>{
         //print(e);
       }
     });
-  }
+  }*/
 
-  void setVoice(Map voice){
+  /*void setVoice(Map voice){
     _flutterTts.setVoice({"name": voice["name"], "locale": voice["locale"]});
-  }
+  }*/
 
   @override
   Widget build(BuildContext context){
@@ -85,7 +89,7 @@ class _TestTTS extends State<MyTest>{
             title: "test",
             supportedLocales: L10n.locals,
             locale: snapshot.data,
-            localizationsDelegates: [
+            localizationsDelegates: const [
               GlobalMaterialLocalizations.delegate,
               GlobalWidgetsLocalizations.delegate,
               GlobalCupertinoLocalizations.delegate,
@@ -97,25 +101,33 @@ class _TestTTS extends State<MyTest>{
                 child: Column(
                 children:[
                   ElevatedButton(
-                    child: Text("test"),
+                    child: Text(context.localizations.changeLanguage),
                     //style: ElevatedButton.styleFrom(background: Colors.blue),
                     onPressed: (){
                       Navigator.pop(context);
                     },
                   ),
                   DropdownButton(
-                    value: _currentVoice,
-                    items: _voices.map((_voice) => DropdownMenuItem(
-                      value: _voice,
+                    value: allLocales.first,
+                    items: allLocales.map((languageCode) => DropdownMenuItem<Locale>(
+                      value: languageCode,
                       child: Text(
-                        _voice["name"]
+                        languageCode as String
                         ,)
                       ,)
                       ,)
                         .toList(),
-                      onChanged: (value){
+                      onChanged: (Locale? value){
+                        GenerateStreams.languageStream.add(value as Locale);
                        //configuration.SetLanguage(_currentVoice!["name"]);
-                      })
+                      }),
+                  /*ElevatedButton(
+                      onPressed: () async{
+                        GenerateStreams.languageStream.add(
+                          L10n.locals.firstWhere((element) => element != selectedLocal),
+                        );
+                      },
+                      child: Text(context.localizations.changeLanguage))*/
                 ]
                 )
               ),
