@@ -39,7 +39,7 @@ dependencies:
   speech_to_text: ^7.0.0
   flutter_tts: ^4.2.0
   http: ^1.2.2
-  flutter_localization:
+  flutter_localizations:
     sdk: flutter
 
 dev_dependencies:

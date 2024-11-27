@@ -6,5 +6,7 @@
     },
     "helloWorld": "Witaj świecie",
     "twoLanguages": "Aplikacja posiada 2 języki",
-    "changeLanguage": "Zmień język"
+    "changeLanguage": "Zmień język",
+    "locale_id": "pl-PL"
+
 }

@@ -6,5 +6,6 @@
     },
     "helloWorld": "Hello World",
     "twoLanguages": "This app has 2 languages",
-    "changeLanguage": "Change Language"
+    "changeLanguage": "Change Language",
+    "locale_id": "en-US"
 }
