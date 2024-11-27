@@ -19,10 +19,30 @@ marker_dict = {
     4: "Marker 4"
 }
 
+def is_duplicate(circle1, circle2, center_tolerance=15, size_tolerance=0.15):
+    """
+    Sprawdza, czy dwa okręgi są duplikatami na podstawie bliskości centrów i podobieństwa rozmiarów.
+    """
+    (x1, y1, MA1, ma1, _, _, _, _, _) = circle1
+    (x2, y2, MA2, ma2, _, _, _, _, _) = circle2
+
+    # Porównanie centrów
+    center_distance = np.sqrt((x1 - x2)**2 + (y1 - y2)**2)
+    if center_distance > center_tolerance:
+        return False
+
+    # Porównanie rozmiarów (średnia długość osi elipsy)
+    size1 = (MA1 + ma1) / 2
+    size2 = (MA2 + ma2) / 2
+    if abs(size1 - size2) / size1 > size_tolerance:
+        return False
+
+    return True
 
 def detect_markers(frame, depth_frame):
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+    blurred = cv2.medianBlur(gray, 5)
+    blurred = cv2.GaussianBlur(blurred, (5, 5), 0)
     binary = cv2.adaptiveThreshold(
         blurred,
         255,
@@ -64,31 +84,45 @@ def detect_markers(frame, depth_frame):
                     continue
 
                 if 0.8 <= circularity_ellipse <= 1.2:
-                    valid_circles.append((x, y, MA, ma, cnt, ellipse, hierarchy[0][i]))
+                    valid_circles.append((x, y, MA, ma, cnt, ellipse, hierarchy[0][i], area, perimeter))
             except cv2.error as e:
                 print("Error fitting ellipse: ", e)
                 continue
 
-    detected_markers = False
-    marker_results = []
+    # Filtrowanie duplikatów
+    filtered_circles = []
+    for circle in valid_circles:
+        is_duplicate_circle = any(is_duplicate(circle, existing_circle) for existing_circle in filtered_circles)
+        if not is_duplicate_circle:
+            filtered_circles.append(circle)
+
+    valid_circles = filtered_circles
 
     # Sortowanie okręgów wg wielkości
     valid_circles.sort(key=lambda c: c[2] * c[3], reverse=True)
 
-    # Ignorowanie największego okręgu
-    if valid_circles:
-        valid_circles.pop(0)
+    detected_markers = False
+    marker_results = []
+    second_largest_circle = None  # Inicjalizacja zmiennej
 
-    # Zaznaczenie drugiego największego okręgu na czerwono
-    if valid_circles:
-        second_largest_circle = valid_circles.pop(0)
-        cv2.ellipse(frame, second_largest_circle[5], (0, 0, 255), 2)
+    # Zaznaczenie największego i drugiego największego okręgu
+    for idx, circle in enumerate(valid_circles):
+        id_label = f"ID: {idx}"
+        if idx == 0:
+            cv2.ellipse(frame, circle[5], (255, 0, 0), 2)  # Największy okrąg na niebiesko
+            cv2.putText(frame, id_label, (int(circle[0]), int(circle[1])), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
+        elif idx == 1:
+            second_largest_circle = circle  # Przypisanie wartości
+            cv2.ellipse(frame, circle[5], (0, 0, 255), 2)  # Drugi największy okrąg na czerwono
+            cv2.putText(frame, id_label, (int(circle[0]), int(circle[1])), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+        else:
+            cv2.ellipse(frame, circle[5], (0, 255, 0), 2)  # Pozostałe mniejsze okręgi na zielono
+            cv2.putText(frame, id_label, (int(circle[0]), int(circle[1])), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
-    # Zaznaczenie pozostałych mniejszych okręgów na zielono
-    for circle in valid_circles:
-        cv2.ellipse(frame, circle[5], (0, 255, 0), 2)
+        # Wypisanie parametrów w konsoli
+        print(f"{id_label} -> Area: {circle[7]:.2f}, Perimeter: {circle[8]:.2f}, Center: ({round(circle[0])}, {round(circle[1])})")
 
-    if 'second_largest_circle' in locals():
+    if second_largest_circle:
         depth_value = depth_frame.get_distance(int(second_largest_circle[0]), int(second_largest_circle[1]))
         distance = f"{depth_value:.2f}m" if depth_value != 0 else "Unknown"
         steps = f"{round(depth_value * 1.31)} steps" if depth_value != 0 else "Unknown"
@@ -113,7 +147,6 @@ def detect_markers(frame, depth_frame):
         print(f"{marker_name} at ({round(x)}, {round(y)}), Distance: {distance}, {steps} - {inner_count} circles")
 
     return frame, detected_markers
-
 
 try:
     while True:
