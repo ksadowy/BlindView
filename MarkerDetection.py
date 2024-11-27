@@ -29,6 +29,50 @@ previous_marker = None
 previous_detected = False
 
 
+def calculate_angle(width, x):
+    """
+    Przekształca współrzędne x obrazu na kąt
+    pomiędzy -90 a 90 stopni, gdzie -90 to lewo,
+    a 90 to prawo
+    :param width: szerokość obrazu
+    :param x: współrzędna x
+    :return: kąt w stopniach (-90, 90)
+    """
+
+    # Odchylenie od środka obrazu -> przekształcenie na kąt
+    deviation = x - width / 2
+    angle = (deviation / (width / 2)) * 90
+
+    return angle
+
+def angle_to_direction(angle):
+    """
+    Przekształca kąt na kierunek w godzinach zgodnie ze wskazówkami zegara
+    :param angle: kąt w stopniach (-90, 90)
+    :return: kierunek w godzinach
+    """
+
+    if -90 <= angle < -75:
+        direction = "9 o'clock"
+    elif -75 <= angle < -45:
+        direction = "10 o'clock"
+    elif -45 <= angle < -15:
+        direction = "11 o'clock"
+    elif -15 <= angle <= 15:
+        direction = "12 o'clock"
+    elif 15 < angle <= 45:
+        direction = "1 o'clock"
+    elif 45 < angle <= 75:
+        direction = "2 o'clock"
+    elif 75 < angle <= 90:
+        direction = "3 o'clock"
+    else:
+        direction = "Unknown"
+
+    return direction
+
+
+
 def is_duplicate(circle1, circle2, center_tolerance=15, size_tolerance=0.15):
     """
     Sprawdza, czy dwa okręgi są duplikatami na podstawie bliskości centrów i podobieństwa rozmiarów.
