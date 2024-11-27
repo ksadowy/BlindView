@@ -1,6 +1,7 @@
 import cv2
 import pyrealsense2 as rs
 import numpy as np
+import time
 
 # Inicjalizacja kamery RealSense
 pipeline = rs.pipeline()
@@ -19,6 +20,15 @@ marker_dict = {
     4: "Marker 4"
 }
 
+# Cooldown na otrzymywanie informacji o tym samym markerze (w sekundach)
+marker_cooldown = 10
+last_detected_time = {}
+
+# Zmienne do kontrolowania wypisywania statusu w konsoli
+previous_marker = None
+previous_detected = False
+
+
 def is_duplicate(circle1, circle2, center_tolerance=15, size_tolerance=0.15):
     """
     Sprawdza, czy dwa okręgi są duplikatami na podstawie bliskości centrów i podobieństwa rozmiarów.
@@ -27,7 +37,7 @@ def is_duplicate(circle1, circle2, center_tolerance=15, size_tolerance=0.15):
     (x2, y2, MA2, ma2, _, _, _, _, _) = circle2
 
     # Porównanie centrów
-    center_distance = np.sqrt((x1 - x2)**2 + (y1 - y2)**2)
+    center_distance = np.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
     if center_distance > center_tolerance:
         return False
 
@@ -39,7 +49,10 @@ def is_duplicate(circle1, circle2, center_tolerance=15, size_tolerance=0.15):
 
     return True
 
+
 def detect_markers(frame, depth_frame):
+    global previous_marker, previous_detected
+
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     blurred = cv2.medianBlur(gray, 5)
     blurred = cv2.GaussianBlur(blurred, (5, 5), 0)
@@ -110,17 +123,17 @@ def detect_markers(frame, depth_frame):
         id_label = f"ID: {idx}"
         if idx == 0:
             cv2.ellipse(frame, circle[5], (255, 0, 0), 2)  # Największy okrąg na niebiesko
-            cv2.putText(frame, id_label, (int(circle[0]), int(circle[1])), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
+            cv2.putText(frame, id_label, (int(circle[0]), int(circle[1])), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0),
+                        2)
         elif idx == 1:
             second_largest_circle = circle  # Przypisanie wartości
             cv2.ellipse(frame, circle[5], (0, 0, 255), 2)  # Drugi największy okrąg na czerwono
-            cv2.putText(frame, id_label, (int(circle[0]), int(circle[1])), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+            cv2.putText(frame, id_label, (int(circle[0]), int(circle[1])), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255),
+                        2)
         else:
             cv2.ellipse(frame, circle[5], (0, 255, 0), 2)  # Pozostałe mniejsze okręgi na zielono
-            cv2.putText(frame, id_label, (int(circle[0]), int(circle[1])), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-
-        # Wypisanie parametrów w konsoli
-        print(f"{id_label} -> Area: {circle[7]:.2f}, Perimeter: {circle[8]:.2f}, Center: ({round(circle[0])}, {round(circle[1])})")
+            cv2.putText(frame, id_label, (int(circle[0]), int(circle[1])), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0),
+                        2)
 
     if second_largest_circle:
         depth_value = depth_frame.get_distance(int(second_largest_circle[0]), int(second_largest_circle[1]))
@@ -137,16 +150,28 @@ def detect_markers(frame, depth_frame):
                 marker_name = "Unknown marker"
                 color = (255, 0, 0)
 
-            marker_results.append((second_largest_circle[0], second_largest_circle[1], unique_inner_counts, marker_name,
-                                   second_largest_circle[5], color, distance))
+            current_time = time.time()
 
-            detected_markers = True
+            # Sprawdzenie cooldownu
+            if marker_name not in last_detected_time or (
+                    current_time - last_detected_time[marker_name]) > marker_cooldown:
+                last_detected_time[marker_name] = current_time
+                marker_results.append(
+                    (second_largest_circle[0], second_largest_circle[1], unique_inner_counts, marker_name,
+                     second_largest_circle[5], color, distance))
+                detected_markers = True
 
-    for x, y, inner_count, marker_name, ellipse, color, distance in marker_results:
-        cv2.putText(frame, marker_name, (int(x), int(y) - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
-        print(f"{marker_name} at ({round(x)}, {round(y)}), Distance: {distance}, {steps} - {inner_count} circles")
+                if not previous_detected or (previous_marker != marker_name):
+                    print(
+                        f"{marker_name} at ({round(second_largest_circle[0])}, {round(second_largest_circle[1])}), Distance: {distance}, {steps} - {unique_inner_counts} circles")
+
+                previous_marker = marker_name
+                previous_detected = True
+            else:
+                previous_detected = False
 
     return frame, detected_markers
+
 
 try:
     while True:
