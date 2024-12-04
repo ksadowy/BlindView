@@ -206,8 +206,11 @@ def detect_markers(frame, depth_frame):
                 detected_markers = True
 
                 if not previous_detected or (previous_marker != marker_name):
+                    angle = calculate_angle(frame.shape[1], second_largest_circle[0])
+                    direction = angle_to_direction(angle)
                     print(
-                        f"{marker_name} at ({round(second_largest_circle[0])}, {round(second_largest_circle[1])}), Distance: {distance}, {steps} - {unique_inner_counts} circles")
+                        f"{marker_name} at ({round(second_largest_circle[0])}, {round(second_largest_circle[1])}), Distance: {distance},"
+                        f"{steps} - {unique_inner_counts} circles, Angle: {angle:.2f} degrees, Direction: {direction}")
 
                 previous_marker = marker_name
                 previous_detected = True
