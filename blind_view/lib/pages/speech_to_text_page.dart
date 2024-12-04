@@ -8,7 +8,9 @@ import '../widgets/speech_control.dart';
 import 'test_page.dart';
 
 class SpeechToTextPage extends StatefulWidget {
-  const SpeechToTextPage({Key? key}) : super(key: key);
+  const SpeechToTextPage({Key? key, required this.selectedLocal}) : super(key: key);
+  final Locale selectedLocal;
+
 
   @override
   State<SpeechToTextPage> createState() => _SpeechToTextPageState();
@@ -34,7 +36,7 @@ class _SpeechToTextPageState extends State<SpeechToTextPage> {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder(
+    return StreamBuilder<Locale>(
         stream: GenerateStreams.languageStream.stream,
         builder: (context, snapshot) {
           return Scaffold(
@@ -79,7 +81,7 @@ class _SpeechToTextPageState extends State<SpeechToTextPage> {
                     },
                   ),
                   ElevatedButton(
-                    //don't press for now, it crashes if you do
+                    //crash error resolved, snapshot seems to be null while changing language in test page
                     onPressed: () {
                       Navigator.push(
                         context,

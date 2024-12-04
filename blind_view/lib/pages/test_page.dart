@@ -39,7 +39,9 @@ class _TestTTS extends State<MyTest>{
   late Config configuration;*/
   //configuration.SetLanguage("pl-PL");
 
+/*
   List<Locale> allLocales = L10n.locals;
+*/
 
   @override
   void initState() {
@@ -52,7 +54,9 @@ class _TestTTS extends State<MyTest>{
   }
 
   void dispose(){
+/*
     GenerateStreams.languageStream.close();
+*/
     super.dispose();
   }
 
@@ -82,7 +86,10 @@ class _TestTTS extends State<MyTest>{
 
   @override
   Widget build(BuildContext context){
-    return StreamBuilder(
+    print("Widget build: ");
+    print(widget.selectedLocal);
+    Locale dropdownValueLocale = widget.selectedLocal;
+    return StreamBuilder<Locale>(
         stream: GenerateStreams.languageStream.stream,
         builder: (context, snapshot){
           return MaterialApp(
@@ -104,23 +111,38 @@ class _TestTTS extends State<MyTest>{
                     child: Text(context.localizations.changeLanguage),
                     //style: ElevatedButton.styleFrom(background: Colors.blue),
                     onPressed: (){
-                      Navigator.pop(context);
+                      GenerateStreams.languageStream.add(dropdownValueLocale);
+                      print(snapshot.data);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) =>
+                            MyTest(selectedLocal: snapshot.data ?? dropdownValueLocale),
+                        )
+                      );
                     },
                   ),
-                  DropdownButton(
-                    value: allLocales.first,
-                    items: allLocales.map((languageCode) => DropdownMenuItem<Locale>(
-                      value: languageCode,
-                      child: Text(
-                        languageCode as String
-                        ,)
-                      ,)
-                      ,)
-                        .toList(),
-                      onChanged: (Locale? value){
-                        GenerateStreams.languageStream.add(value as Locale);
-                       //configuration.SetLanguage(_currentVoice!["name"]);
-                      }),
+                  DropdownButton<Locale>(
+                    value: dropdownValueLocale,
+                    items: L10n.locals.map((locale) {
+                      return DropdownMenuItem<Locale>(
+                        value: locale,
+                        child: Text(
+                          locale.languageCode
+                        ),
+                      );
+                    }).toList(),
+                    onChanged: (Locale? value) {
+                      if (value != null) {
+
+                        setState(() {
+                          dropdownValueLocale = value; // Update the selected locale
+                        });
+                        print("dropdown: $dropdownValueLocale");
+                        // configuration.SetLanguage(value.languageCode); // Uncomment and adjust as needed
+                      }
+                    },
+                  ),
+
                   /*ElevatedButton(
                       onPressed: () async{
                         GenerateStreams.languageStream.add(

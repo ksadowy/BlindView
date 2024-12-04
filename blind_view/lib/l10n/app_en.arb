@@ -1,5 +1,5 @@
 {
-    "@@locate": "en",
+    "@@locale": "en",
     "language": "English",
     "@language": {
         "description": "Selected language"
@@ -7,5 +7,10 @@
     "helloWorld": "Hello World",
     "twoLanguages": "This app has 2 languages",
     "changeLanguage": "Change Language",
-    "locale_id": "en-US"
+    "locale_id": "en-US",
+    "@locale_id": {
+        "type": "Locale"
+    }
+
+
 }

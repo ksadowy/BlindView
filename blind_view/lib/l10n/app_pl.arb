@@ -1,5 +1,5 @@
 {
-    "@@locate": "pl",
+    "@@locale": "pl",
     "language": "Polski",
     "@language": {
         "description": "Wybrany język"
