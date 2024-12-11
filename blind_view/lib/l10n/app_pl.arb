@@ -7,6 +7,9 @@
     "helloWorld": "Witaj świecie",
     "twoLanguages": "Aplikacja posiada 2 języki",
     "changeLanguage": "Zmień język",
-    "locale_id": "pl-PL"
+    "locale_id": "pl-PL",
+    "settingsButton": "Ustawienia Języka",
+    "commandsPageTitle": "Wydawanie komend"
+
 
 }
