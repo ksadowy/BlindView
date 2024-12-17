@@ -12,7 +12,12 @@
         "type": "Locale"
     },
     "settingsButton": "Lang Settings",
-    "commandsPageTitle": "Commands page"
+    "commandsPageTitle": "Commands page",
+    "settingsDownPage": "Settings",
+    "speechCapture": "Speech Capture",
+    "tapTheMicrophone": "Tap the microphone to start listening...",
+    "availableSpeech": "speech not available",
+    "availableNoSpeech": "No text available to speak"
 
 
 }

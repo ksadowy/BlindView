@@ -3,6 +3,7 @@ import 'package:blind_view/extensions/context_extension.dart';
 import 'package:blind_view/l10n/l10n.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import '../services/speech_service.dart';
 import '../widgets/speech_control.dart';
 import 'test_page.dart';
@@ -41,21 +42,30 @@ class _SpeechToTextPageState extends State<SpeechToTextPage> {
         builder: (BuildContext innerContext, snapshot) {
           print("Outer context:");
           print(context);
-          print("Inner context");
-          print(innerContext);
+          print("SpeechToText snaphot data");
+          print(snapshot.data);
           print('');
-          return Builder(
-          builder: (context) => Scaffold(
-            appBar: AppBar(title: const Text('wydawanie komend')),
+          return MaterialApp(
+            title: "test",
+            supportedLocales: L10n.locals,
+            locale: snapshot.data,
+            localizationsDelegates: const [
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+              AppLocalizations.delegate,
+            ],
+            home: Scaffold(
+            appBar: AppBar(title: Text(context.localizations.commandsPageTitle)),
             body: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Padding(
-                    padding: EdgeInsets.all(16.0),
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
                     child: Text(
-                      'Przechwytywanie mowy:',
-                      style: TextStyle(fontSize: 20.0),
+                      context.localizations.speechCapture,
+                      style: const TextStyle(fontSize: 20.0),
                     ),
                   ),
                   Expanded(
@@ -65,8 +75,8 @@ class _SpeechToTextPageState extends State<SpeechToTextPage> {
                         _speechService.isListening
                             ? _lastWords
                             : _speechService.isAvailable
-                            ? 'Tap the microphone to start listening...'
-                            : 'Speech not available',
+                            ? context.localizations.tapTheMicrophone
+                            : context.localizations.availableSpeech,
                       ),
                     ),
                   ),
@@ -83,7 +93,7 @@ class _SpeechToTextPageState extends State<SpeechToTextPage> {
                     onSpeak: () {
                       _speechService.speak(_lastWords.isNotEmpty
                           ? _lastWords
-                          : "No text available to speak");
+                          : context.localizations.availableNoSpeech);
                     },
                   ),
                   ElevatedButton(
@@ -102,8 +112,8 @@ class _SpeechToTextPageState extends State<SpeechToTextPage> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: const Text(
-                        'kom', style: TextStyle(fontSize: 18)),
+                    child: Text(
+                        context.localizations.settingsDownPage, style: const TextStyle(fontSize: 18)),
                   ),
                 ],
               ),

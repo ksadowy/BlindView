@@ -9,7 +9,13 @@
     "changeLanguage": "Zmień język",
     "locale_id": "pl-PL",
     "settingsButton": "Ustawienia Języka",
-    "commandsPageTitle": "Wydawanie komend"
+    "commandsPageTitle": "Wydawanie komend",
+    "settingsDownPage": "Ustawienia",
+    "speechCapture": "Przechwytywanie mowy",
+    "tapTheMicrophone": "Dotknij mikrofomu, aby rozpocząć nasłuchiwanie...",
+    "availableSpeech": "Mowa niedostępna",
+    "availableNoSpeech": "Brak dostępnego tekstu do odczytu"
+
 
 
 }

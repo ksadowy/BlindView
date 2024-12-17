@@ -1,3 +1,4 @@
+import 'package:blind_view/pages/speech_to_text_page.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -91,7 +92,8 @@ class _TestTTS extends State<MyTest>{
     return StreamBuilder<Locale>(
         stream: GenerateStreams.languageStream.stream,
         builder: (context, snapshot){
-          print(snapshot);
+          print("TextPage snapshot.data");
+          print(snapshot.data);
           return MaterialApp(
             title: "test",
             supportedLocales: L10n.locals,
@@ -103,7 +105,7 @@ class _TestTTS extends State<MyTest>{
               AppLocalizations.delegate,
             ],
             home: Scaffold(
-              appBar: AppBar(title: Text(context.localizations.settingsButton),),
+              appBar: AppBar(title: Text(context.localizations.changeLanguage),),
               body: Center(
                 child: Column(
                 children:[
@@ -116,7 +118,7 @@ class _TestTTS extends State<MyTest>{
                       Navigator.push(
                         context,
                         MaterialPageRoute(builder: (context) =>
-                            MyTest(selectedLocal: snapshot.data ?? dropdownValueLocale),
+                            SpeechToTextPage(selectedLocal: snapshot.data ?? dropdownValueLocale),
                         )
                       );
                     },
