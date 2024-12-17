@@ -47,7 +47,6 @@ class _TestTTS extends State<MyTest>{
   void initState() {
     // TODO: implement initState
     super.initState();
-    GenerateStreams.languageStream.add(const Locale('en'));
 /*
     initTTS();
 */
@@ -92,6 +91,7 @@ class _TestTTS extends State<MyTest>{
     return StreamBuilder<Locale>(
         stream: GenerateStreams.languageStream.stream,
         builder: (context, snapshot){
+          print(snapshot);
           return MaterialApp(
             title: "test",
             supportedLocales: L10n.locals,
@@ -103,7 +103,7 @@ class _TestTTS extends State<MyTest>{
               AppLocalizations.delegate,
             ],
             home: Scaffold(
-              appBar: AppBar(title: Text("Test"),),
+              appBar: AppBar(title: Text(context.localizations.settingsButton),),
               body: Center(
                 child: Column(
                 children:[
@@ -133,9 +133,9 @@ class _TestTTS extends State<MyTest>{
                     }).toList(),
                     onChanged: (Locale? value) {
                       if (value != null) {
-
                         setState(() {
-                          dropdownValueLocale = value; // Update the selected locale
+                          dropdownValueLocale = value;
+                          GenerateStreams.languageStream.add(dropdownValueLocale);// Update the selected locale
                         });
                         print("dropdown: $dropdownValueLocale");
                         // configuration.SetLanguage(value.languageCode); // Uncomment and adjust as needed

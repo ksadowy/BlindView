@@ -7,6 +7,7 @@ import 'package:blind_view/l10n/l10n.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 void main() {
+
   runApp(const MyApp());
 }
 
@@ -21,6 +22,10 @@ class MyApp extends StatelessWidget {
           return MaterialApp(
             title: 'Flutter Clean Code Demo',
             theme: ThemeData(primarySwatch: Colors.blue),
+            /*initialRoute: "/",
+            routes: {
+              "/": (context) => SpeechToTextPage(selectedLocal: snapshot.data ?? const Locale('en'))
+            },*/
             home: SpeechToTextPage(selectedLocal: snapshot.data ?? const Locale('en')),
             supportedLocales: L10n.locals,
             locale: snapshot.data,

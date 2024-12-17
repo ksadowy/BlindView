@@ -10,7 +10,9 @@
     "locale_id": "en-US",
     "@locale_id": {
         "type": "Locale"
-    }
+    },
+    "settingsButton": "Lang Settings",
+    "commandsPageTitle": "Commands page"
 
 
 }

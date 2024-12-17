@@ -38,9 +38,15 @@ class _SpeechToTextPageState extends State<SpeechToTextPage> {
   Widget build(BuildContext context) {
     return StreamBuilder<Locale>(
         stream: GenerateStreams.languageStream.stream,
-        builder: (context, snapshot) {
-          return Scaffold(
-            appBar: AppBar(title: const Text('Wydawanie komend')),
+        builder: (BuildContext innerContext, snapshot) {
+          print("Outer context:");
+          print(context);
+          print("Inner context");
+          print(innerContext);
+          print('');
+          return Builder(
+          builder: (context) => Scaffold(
+            appBar: AppBar(title: const Text('wydawanie komend')),
             body: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -97,11 +103,13 @@ class _SpeechToTextPageState extends State<SpeechToTextPage> {
                       ),
                     ),
                     child: const Text(
-                        'Komendy', style: TextStyle(fontSize: 18)),
+                        'kom', style: TextStyle(fontSize: 18)),
                   ),
                 ],
               ),
             ),
+          ),
+
           );
         }
     );
