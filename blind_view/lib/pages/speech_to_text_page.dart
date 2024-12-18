@@ -23,7 +23,7 @@ class _SpeechToTextPageState extends State<SpeechToTextPage> {
 
   @override
   void initState() {
-    GenerateStreams.languageStream.add(const Locale('en'));
+    GenerateStreams.languageStream.add(widget.selectedLocal);
     super.initState();
     _speechService.initialize();
   }

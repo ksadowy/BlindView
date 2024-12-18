@@ -23,9 +23,9 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
   }
 }*/
 class MyTest extends StatefulWidget{
-  const MyTest({super.key, required this.selectedLocal});
+  MyTest({super.key, required this.selectedLocal});
 
-  final Locale selectedLocal;
+  Locale selectedLocal;
 
   @override
   State<MyTest> createState() => _TestTTS();
@@ -48,6 +48,7 @@ class _TestTTS extends State<MyTest>{
   void initState() {
     // TODO: implement initState
     super.initState();
+    GenerateStreams.languageStream.add(widget.selectedLocal);
 /*
     initTTS();
 */
@@ -137,6 +138,7 @@ class _TestTTS extends State<MyTest>{
                       if (value != null) {
                         setState(() {
                           dropdownValueLocale = value;
+                          widget.selectedLocal = value;
                           GenerateStreams.languageStream.add(dropdownValueLocale);// Update the selected locale
                         });
                         print("dropdown: $dropdownValueLocale");
