@@ -107,7 +107,14 @@ class _TestTTS extends State<MyTest>{
             ],
             home: Scaffold(
               appBar: AppBar(
-                title: Text(context.localizations.changeLanguage),
+                leading: Image.asset('assets/icon/Logo_blind_view.png'),
+                title: Container(
+                  padding: const EdgeInsets.only(left: 25.0),
+                  child: Text(context.localizations.changeLanguage),
+
+                ),
+                backgroundColor: Colors.purple[50],
+
               ),
               body: Stack(
                 children: [
@@ -143,11 +150,7 @@ class _TestTTS extends State<MyTest>{
                               });
                             }
                           },
-                          style: const TextStyle(
-                            color: Colors.blue,
-                            fontSize: 50,
-                          ),
-                          dropdownColor: Colors.white,
+
                           icon: const Icon(
                             Icons.arrow_drop_down,
                             color: Colors.blue,
