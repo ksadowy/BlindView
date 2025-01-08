@@ -107,7 +107,13 @@ class _TestTTS extends State<MyTest>{
             ],
             home: Scaffold(
               appBar: AppBar(
-                leading: Image.asset('assets/icon/Logo_blind_view.png'),
+                leading: Padding(
+                  padding: const EdgeInsets.all(8.0), // Optional padding for better spacing
+                  child: Image.asset(
+                    'assets/icon/Logo_blind_view.png', // Path to the launcher icon
+                    fit: BoxFit.contain, // Adjusts how the image fits within the space
+                  ),
+                ),
                 title: Container(
                   padding: const EdgeInsets.only(left: 25.0),
                   child: Text(context.localizations.changeLanguage),

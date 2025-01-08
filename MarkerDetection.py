@@ -169,14 +169,25 @@ def detect_markers(frame, depth_frame):
             cv2.putText(frame, id_label, (int(circle[0]), int(circle[1])), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255),
                         2)
 
-            # Wykrywanie małych okręgów w drugim największym okręgu
-            roi = binary[int(circle[1] - circle[3] / 2):int(circle[1] + circle[3] / 2),
-                  int(circle[0] - circle[2] / 2):int(circle[0] + circle[2] / 2)]
+            # Wyznaczenie ROI wokół drugiego największego okręgu
+            x_start = max(0, int(circle[0] - circle[2] / 2))
+            x_end = min(binary.shape[1], int(circle[0] + circle[2] / 2))
+            y_start = max(0, int(circle[1] - circle[3] / 2))
+            y_end = min(binary.shape[0], int(circle[1] + circle[3] / 2))
+
+            # Przycinanie obrazu binarnego do ROI
+            roi = binary[y_start:y_end, x_start:x_end]
+
+            # Wizualizacja ROI na obrazie (opcjonalnie)
+            cv2.rectangle(frame, (x_start, y_start), (x_end, y_end), (255, 255, 0), 2)
+
+            # Wykrywanie małych okręgów w ROI
             inner_circles = detect_inner_circles(roi)
             if inner_circles is not None:
                 for inner_circle in inner_circles:
-                    offset_x = int(circle[0] - circle[2] / 2)
-                    offset_y = int(circle[1] - circle[3] / 2)
+                    # Offset współrzędnych wewnętrznych okręgów względem ROI
+                    offset_x = x_start
+                    offset_y = y_start
                     cv2.circle(frame, (inner_circle[0] + offset_x, inner_circle[1] + offset_y), inner_circle[2],
                                (0, 255, 255), 2)
 
@@ -226,6 +237,7 @@ def detect_markers(frame, depth_frame):
     frames_processed += 1  # Zwiększamy licznik przetworzonych klatek
 
     return frame, detected_markers
+
 
 
 try:

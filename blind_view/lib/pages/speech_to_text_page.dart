@@ -56,7 +56,15 @@ class _SpeechToTextPageState extends State<SpeechToTextPage> {
               AppLocalizations.delegate,
             ],
             home: Scaffold(
-            appBar: AppBar(title: Text(context.localizations.commandsPageTitle)),
+            appBar: AppBar(
+                leading: Padding(
+                  padding: const EdgeInsets.all(8.0), // Optional padding for better spacing
+                  child: Image.asset(
+                    'assets/icon/Logo_blind_view.png', // Path to the launcher icon
+                    fit: BoxFit.contain, // Adjusts how the image fits within the space
+                  ),
+                ),
+                title: Text(context.localizations.commandsPageTitle)),
             body: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
