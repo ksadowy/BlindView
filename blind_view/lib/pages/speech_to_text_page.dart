@@ -89,13 +89,16 @@ class _SpeechToTextPageState extends State<SpeechToTextPage> {
                         });
                       });
                     },
+
                     onStop: _speechService.stopListening,
                     onSpeak: () {
                       _speechService.speak(_lastWords.isNotEmpty
                           ? _lastWords
                           : context.localizations.availableNoSpeech);
                     },
+
                   ),
+
                   ElevatedButton(
                     //crash error resolved, snapshot seems to be null while changing language in test page
                     onPressed: () {
