@@ -106,47 +106,110 @@ class _TestTTS extends State<MyTest>{
               AppLocalizations.delegate,
             ],
             home: Scaffold(
-              appBar: AppBar(title: Text(context.localizations.changeLanguage),),
-              body: Center(
-                child: Column(
-                children:[
-                  ElevatedButton(
-                    child: Text(context.localizations.changeLanguage),
-                    //style: ElevatedButton.styleFrom(background: Colors.blue),
-                    onPressed: (){
-                      GenerateStreams.languageStream.add(dropdownValueLocale);
-                      print(snapshot.data);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) =>
-                            SpeechToTextPage(selectedLocal: snapshot.data ?? dropdownValueLocale),
-                        )
-                      );
-                    },
+              appBar: AppBar(
+                leading: Padding(
+                  padding: const EdgeInsets.all(8.0), // Optional padding for better spacing
+                  child: Image.asset(
+                    'assets/icon/Logo_blind_view.png', // Path to the launcher icon
+                    fit: BoxFit.contain, // Adjusts how the image fits within the space
                   ),
-                  DropdownButton<Locale>(
-                    value: dropdownValueLocale,
-                    items: L10n.locals.map((locale) {
-                      return DropdownMenuItem<Locale>(
-                        value: locale,
-                        child: Text(
-                          locale.languageCode
+                ),
+                title: Container(
+                  padding: const EdgeInsets.only(left: 25.0),
+                  child: Text(context.localizations.changeLanguage),
+
+                ),
+                backgroundColor: Colors.purple[50],
+
+              ),
+              body: Stack(
+                children: [
+                  Column(
+                    children: [
+                      SizedBox(
+                        height: 100,
+                        width: 400,
+                        child: DropdownButton<Locale>(
+                          value: dropdownValueLocale,
+                          items: L10n.locals.map((locale) {
+                            return DropdownMenuItem<Locale>(
+                              value: locale,
+                              child: Container(
+                                width: double.infinity, // Rozciąga element na całą szerokość
+                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                                alignment: Alignment.centerLeft, // Ustawienie wyrównania tekstu
+                                child: Text(
+                                  locale.languageCode,
+                                  style: const TextStyle(
+                                    fontSize: 30, // Rozmiar czcionki
+                                    fontWeight: FontWeight.bold, // Grubość tekstu
+                                    color: Colors.black,
+                                    overflow: TextOverflow.visible, // Obcięcie, jeśli tekst jest zbyt długi
+                                  ),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                          onChanged: (Locale? value) {
+                            if (value != null) {
+                              setState(() {
+                                dropdownValueLocale = value;
+                                widget.selectedLocal = value;
+                                GenerateStreams.languageStream.add(dropdownValueLocale);
+                              });
+                            }
+                          },
+                          icon: const Icon(
+                            Icons.arrow_drop_down,
+                            color: Colors.blue,
+                            size: 50,
+                          ),
+                          isExpanded: true, // Rozciąga DropdownButton na całą szerokość dostępnego obszaru
+                          dropdownColor: Colors.white, // Opcjonalnie: kolor tła rozwijanego menu
                         ),
-                      );
-                    }).toList(),
-                    onChanged: (Locale? value) {
-                      if (value != null) {
-                        setState(() {
-                          dropdownValueLocale = value;
-                          widget.selectedLocal = value;
-                          GenerateStreams.languageStream.add(dropdownValueLocale);// Update the selected locale
-                        });
-                        print("dropdown: $dropdownValueLocale");
-                        // configuration.SetLanguage(value.languageCode); // Uncomment and adjust as needed
-                      }
-                    },
+                      ),
+                    ],
                   ),
 
+
+                  Positioned(
+                    bottom: 10, // Odległość od dołu ekranu
+                    left: 16,   // Odległość od lewej krawędzi
+                    right: 16,  // Odległość od prawej krawędzi
+                    child: ElevatedButton(
+                      child: Text(
+                        context.localizations.changeLanguage,
+                        style: const TextStyle(
+                          fontSize: 30,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                        minimumSize: const Size(375, 150),
+                        backgroundColor: Colors.purple[50],
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onPressed: () {
+                        GenerateStreams.languageStream.add(dropdownValueLocale);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => SpeechToTextPage(
+                              selectedLocal: snapshot.data ?? dropdownValueLocale,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
                   /*ElevatedButton(
                       onPressed: () async{
                         GenerateStreams.languageStream.add(
@@ -154,11 +217,8 @@ class _TestTTS extends State<MyTest>{
                         );
                       },
                       child: Text(context.localizations.changeLanguage))*/
-                ]
-                )
-              ),
-            ),
-          );
+
+
         }
     );
   }

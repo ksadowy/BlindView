@@ -66,6 +66,7 @@ class _SpeechToTextPageState extends State<SpeechToTextPage> {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<Locale>(
+<<<<<<< HEAD
       stream: GenerateStreams.languageStream.stream,
       builder: (BuildContext innerContext, snapshot) {
         return MaterialApp(
@@ -80,6 +81,35 @@ class _SpeechToTextPageState extends State<SpeechToTextPage> {
           ],
           home: Scaffold(
             appBar: AppBar(title: Text(context.localizations.commandsPageTitle)),
+=======
+        stream: GenerateStreams.languageStream.stream,
+        builder: (BuildContext innerContext, snapshot) {
+          print("Outer context:");
+          print(context);
+          print("SpeechToText snaphot data");
+          print(snapshot.data);
+          print('');
+          return MaterialApp(
+            title: "test",
+            supportedLocales: L10n.locals,
+            locale: snapshot.data,
+            localizationsDelegates: const [
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+              AppLocalizations.delegate,
+            ],
+            home: Scaffold(
+            appBar: AppBar(
+                leading: Padding(
+                  padding: const EdgeInsets.all(8.0), // Optional padding for better spacing
+                  child: Image.asset(
+                    'assets/icon/Logo_blind_view.png', // Path to the launcher icon
+                    fit: BoxFit.contain, // Adjusts how the image fits within the space
+                  ),
+                ),
+                title: Text(context.localizations.commandsPageTitle)),
+>>>>>>> c36ba47461dc4e19b6ae00d9befa19d3d7f9119e
             body: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -113,13 +143,16 @@ class _SpeechToTextPageState extends State<SpeechToTextPage> {
                         _sendToChatGPT(result);  // Automatyczne wysłanie zapytania
                       });
                     },
+
                     onStop: _speechService.stopListening,
                     onSpeak: () {
                       _speechService.speak(_lastWords.isNotEmpty
                           ? _lastWords
                           : context.localizations.availableNoSpeech);
                     },
+
                   ),
+
                   ElevatedButton(
                     onPressed: () {
                       Navigator.push(
