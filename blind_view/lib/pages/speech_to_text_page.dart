@@ -7,11 +7,11 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import '../services/speech_service.dart';
 import '../widgets/speech_control.dart';
 import 'test_page.dart';
+import '../services/chatgpt_service.dart';
 
 class SpeechToTextPage extends StatefulWidget {
   const SpeechToTextPage({Key? key, required this.selectedLocal}) : super(key: key);
   final Locale selectedLocal;
-
 
   @override
   State<SpeechToTextPage> createState() => _SpeechToTextPageState();
@@ -19,12 +19,16 @@ class SpeechToTextPage extends StatefulWidget {
 
 class _SpeechToTextPageState extends State<SpeechToTextPage> {
   final SpeechService _speechService = SpeechService();
+  final ChatGPTService _chatGPTService = ChatGPTService(
+      "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");
+
   String _lastWords = '';
+  String _chatGPTResponse = '';
 
   @override
   void initState() {
-    GenerateStreams.languageStream.add(widget.selectedLocal);
     super.initState();
+    GenerateStreams.languageStream.add(widget.selectedLocal);
     _speechService.initialize();
   }
 
@@ -35,27 +39,46 @@ class _SpeechToTextPageState extends State<SpeechToTextPage> {
     super.dispose();
   }
 
+  bool _isRequesting = false;
+
+  void _sendToChatGPT(String userMessage) async {
+    if (userMessage.isNotEmpty) {
+      // Zatrzymanie nasłuchiwania przed wysłaniem zapytania
+      _speechService.stopListening();
+
+      final response = await _chatGPTService.sendMessageToChatGPT(userMessage);
+      setState(() {
+        _chatGPTResponse = response;
+      });
+
+      // Po zakończeniu wysyłania zapytania i odczytania odpowiedzi, wznawiamy nasłuchiwanie
+      _speechService.speak(response);
+    }
+  }
+
+  void _speakResponse(String response) {
+    // Sprawdzamy, czy TTS nie jest w trakcie mówienia, aby nie uruchomić go ponownie
+    if (!_speechService.isSpeaking && response.isNotEmpty) {
+      _speechService.speak(response);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<Locale>(
-        stream: GenerateStreams.languageStream.stream,
-        builder: (BuildContext innerContext, snapshot) {
-          print("Outer context:");
-          print(context);
-          print("SpeechToText snaphot data");
-          print(snapshot.data);
-          print('');
-          return MaterialApp(
-            title: "test",
-            supportedLocales: L10n.locals,
-            locale: snapshot.data,
-            localizationsDelegates: const [
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
-              AppLocalizations.delegate,
-            ],
-            home: Scaffold(
+      stream: GenerateStreams.languageStream.stream,
+      builder: (BuildContext innerContext, snapshot) {
+        return MaterialApp(
+          title: "ChatGPT App",
+          supportedLocales: L10n.locals,
+          locale: snapshot.data,
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+            AppLocalizations.delegate,
+          ],
+          home: Scaffold(
             appBar: AppBar(title: Text(context.localizations.commandsPageTitle)),
             body: Center(
               child: Column(
@@ -87,6 +110,7 @@ class _SpeechToTextPageState extends State<SpeechToTextPage> {
                         setState(() {
                           _lastWords = result;
                         });
+                        _sendToChatGPT(result);  // Automatyczne wysłanie zapytania
                       });
                     },
                     onStop: _speechService.stopListening,
@@ -97,7 +121,6 @@ class _SpeechToTextPageState extends State<SpeechToTextPage> {
                     },
                   ),
                   ElevatedButton(
-                    //crash error resolved, snapshot seems to be null while changing language in test page
                     onPressed: () {
                       Navigator.push(
                         context,
@@ -106,8 +129,7 @@ class _SpeechToTextPageState extends State<SpeechToTextPage> {
                       );
                     },
                     style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 128, vertical: 16),
+                      padding: const EdgeInsets.symmetric(horizontal: 128, vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -119,9 +141,8 @@ class _SpeechToTextPageState extends State<SpeechToTextPage> {
               ),
             ),
           ),
-
-          );
-        }
+        );
+      },
     );
   }
 }
