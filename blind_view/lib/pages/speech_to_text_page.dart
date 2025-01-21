@@ -1,3 +1,4 @@
+// Main imports
 import 'package:blind_view/streams/generate_stream.dart';
 import 'package:blind_view/extensions/context_extension.dart';
 import 'package:blind_view/l10n/l10n.dart';
@@ -9,8 +10,10 @@ import '../widgets/speech_control.dart';
 import 'test_page.dart';
 import '../services/chatgpt_service.dart';
 
+// Main page widget
 class SpeechToTextPage extends StatefulWidget {
   const SpeechToTextPage({Key? key, required this.selectedLocal}) : super(key: key);
+
   final Locale selectedLocal;
 
   @override
@@ -18,47 +21,38 @@ class SpeechToTextPage extends StatefulWidget {
 }
 
 class _SpeechToTextPageState extends State<SpeechToTextPage> {
+  // Dependencies
   final SpeechService _speechService = SpeechService();
-  final ChatGPTService _chatGPTService = ChatGPTService(
-      "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");
+  final ChatGPTService _chatGPTService = ChatGPTService("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");
 
+  // State variables
   String _lastWords = '';
   String _chatGPTResponse = '';
 
   @override
   void initState() {
     super.initState();
+    // Initialize services and streams
     GenerateStreams.languageStream.add(widget.selectedLocal);
     _speechService.initialize();
   }
 
   @override
   void dispose() {
+    // Dispose resources to avoid memory leaks
     GenerateStreams.languageStream.close();
     _speechService.dispose();
     super.dispose();
   }
 
-  bool _isRequesting = false;
-
-  void _sendToChatGPT(String userMessage) async {
+  // Function to send user message to ChatGPT and handle the response
+  Future<void> _sendToChatGPT(String userMessage) async {
     if (userMessage.isNotEmpty) {
-      // Zatrzymanie nasłuchiwania przed wysłaniem zapytania
       _speechService.stopListening();
-
       final response = await _chatGPTService.sendMessageToChatGPT(userMessage);
       setState(() {
         _chatGPTResponse = response;
       });
-
-      // Po zakończeniu wysyłania zapytania i odczytania odpowiedzi, wznawiamy nasłuchiwanie
-      _speechService.speak(response);
-    }
-  }
-
-  void _speakResponse(String response) {
-    // Sprawdzamy, czy TTS nie jest w trakcie mówienia, aby nie uruchomić go ponownie
-    if (!_speechService.isSpeaking && response.isNotEmpty) {
       _speechService.speak(response);
     }
   }
@@ -66,116 +60,133 @@ class _SpeechToTextPageState extends State<SpeechToTextPage> {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<Locale>(
-<<<<<<< HEAD
       stream: GenerateStreams.languageStream.stream,
-      builder: (BuildContext innerContext, snapshot) {
+      builder: (context, snapshot) {
+        final locale = snapshot.data ?? const Locale('en');
         return MaterialApp(
           title: "ChatGPT App",
           supportedLocales: L10n.locals,
-          locale: snapshot.data,
+          locale: locale,
           localizationsDelegates: const [
             GlobalMaterialLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
             AppLocalizations.delegate,
           ],
-          home: Scaffold(
-            appBar: AppBar(title: Text(context.localizations.commandsPageTitle)),
-=======
-        stream: GenerateStreams.languageStream.stream,
-        builder: (BuildContext innerContext, snapshot) {
-          print("Outer context:");
-          print(context);
-          print("SpeechToText snaphot data");
-          print(snapshot.data);
-          print('');
-          return MaterialApp(
-            title: "test",
-            supportedLocales: L10n.locals,
-            locale: snapshot.data,
-            localizationsDelegates: const [
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
-              AppLocalizations.delegate,
-            ],
-            home: Scaffold(
-            appBar: AppBar(
-                leading: Padding(
-                  padding: const EdgeInsets.all(8.0), // Optional padding for better spacing
-                  child: Image.asset(
-                    'assets/icon/Logo_blind_view.png', // Path to the launcher icon
-                    fit: BoxFit.contain, // Adjusts how the image fits within the space
-                  ),
-                ),
-                title: Text(context.localizations.commandsPageTitle)),
->>>>>>> c36ba47461dc4e19b6ae00d9befa19d3d7f9119e
-            body: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Text(
-                      context.localizations.speechCapture,
-                      style: const TextStyle(fontSize: 20.0),
-                    ),
-                  ),
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Text(
-                        _speechService.isListening
-                            ? _lastWords
-                            : _speechService.isAvailable
-                            ? context.localizations.tapTheMicrophone
-                            : context.localizations.availableSpeech,
-                      ),
-                    ),
-                  ),
-                  SpeechControl(
-                    isListening: _speechService.isListening,
-                    onStart: () {
-                      _speechService.startListening((result) {
-                        setState(() {
-                          _lastWords = result;
-                        });
-                        _sendToChatGPT(result);  // Automatyczne wysłanie zapytania
-                      });
-                    },
+          home: _buildScaffold(context, locale),
+        );
+      },
+    );
+  }
 
-                    onStop: _speechService.stopListening,
-                    onSpeak: () {
-                      _speechService.speak(_lastWords.isNotEmpty
-                          ? _lastWords
-                          : context.localizations.availableNoSpeech);
-                    },
+  // Extracted scaffold widget for better readability
+  Widget _buildScaffold(BuildContext context, Locale locale) {
+    return Scaffold(
+      appBar: _buildAppBar(),
+      body: _buildBody(context, locale),
+    );
+  }
 
-                  ),
+  // App bar with a logo
+  AppBar _buildAppBar() {
+    return AppBar(
+      leading: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Image.asset(
+          'assets/icon/Logo_blind_view.png',
+          fit: BoxFit.contain,
+        ),
+      ),
+      title: Text(AppLocalizations.of(context)?.commandsPageTitle ?? "Commands"),
+    );
+  }
 
-                  ElevatedButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) =>
-                            MyTest(selectedLocal: snapshot.data ?? const Locale('en'))),
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 128, vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: Text(
-                        context.localizations.settingsDownPage, style: const TextStyle(fontSize: 18)),
-                  ),
-                ],
-              ),
-            ),
+  // Main body content
+  Widget _buildBody(BuildContext context, Locale locale) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          _buildInstructionText(),
+          _buildSpeechResultDisplay(),
+          _buildSpeechControl(context),
+          _buildNavigationButton(context, locale),
+        ],
+      ),
+    );
+  }
+
+  // Instruction text widget
+  Widget _buildInstructionText() {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Text(
+        AppLocalizations.of(context)?.speechCapture ?? "Speak something",
+        style: const TextStyle(fontSize: 20.0),
+      ),
+    );
+  }
+
+  // Display for speech recognition result
+  Widget _buildSpeechResultDisplay() {
+    return Expanded(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Text(
+          _speechService.isListening
+              ? _lastWords
+              : _speechService.isAvailable
+              ? AppLocalizations.of(context)?.tapTheMicrophone ?? "Tap to start"
+              : AppLocalizations.of(context)?.availableSpeech ?? "Speech not available",
+        ),
+      ),
+    );
+  }
+
+  // Speech control widget
+  Widget _buildSpeechControl(BuildContext context) {
+    return SpeechControl(
+      isListening: _speechService.isListening,
+      onStart: () {
+        _speechService.startListening((result) {
+          setState(() {
+            _lastWords = result;
+          });
+          _sendToChatGPT(result);
+        });
+      },
+      onStop: _speechService.stopListening,
+      onSpeak: () {
+        _speechService.speak(
+          _lastWords.isNotEmpty
+              ? _lastWords
+              : AppLocalizations.of(context)?.availableNoSpeech ?? "No speech detected",
+        );
+      },
+    );
+  }
+
+  // Navigation button to test page
+  Widget _buildNavigationButton(BuildContext context, Locale locale) {
+    return ElevatedButton(
+      onPressed: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => MyTest(selectedLocal: locale),
           ),
         );
       },
+      style: ElevatedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 128, vertical: 16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+      child: Text(
+        AppLocalizations.of(context)?.settingsDownPage ?? "Settings",
+        style: const TextStyle(fontSize: 18),
+      ),
     );
   }
 }
