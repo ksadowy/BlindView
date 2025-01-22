@@ -107,7 +107,13 @@ class _TestTTS extends State<MyTest>{
             ],
             home: Scaffold(
               appBar: AppBar(
-                leading: Image.asset('assets/icon/Logo_blind_view.png'),
+                leading: Padding(
+                  padding: const EdgeInsets.all(8.0), // Optional padding for better spacing
+                  child: Image.asset(
+                    'assets/icon/Logo_blind_view.png', // Path to the launcher icon
+                    fit: BoxFit.contain, // Adjusts how the image fits within the space
+                  ),
+                ),
                 title: Container(
                   padding: const EdgeInsets.only(left: 25.0),
                   child: Text(context.localizations.changeLanguage),
@@ -128,14 +134,17 @@ class _TestTTS extends State<MyTest>{
                           items: L10n.locals.map((locale) {
                             return DropdownMenuItem<Locale>(
                               value: locale,
-                              child: Padding(
-                                padding: const EdgeInsets.all(9.0), // Przesunięcie tekstu w dół
+                              child: Container(
+                                width: double.infinity, // Rozciąga element na całą szerokość
+                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                                alignment: Alignment.centerLeft, // Ustawienie wyrównania tekstu
                                 child: Text(
                                   locale.languageCode,
                                   style: const TextStyle(
-                                    fontSize: 60, // Rozmiar czcionki
+                                    fontSize: 30, // Rozmiar czcionki
                                     fontWeight: FontWeight.bold, // Grubość tekstu
                                     color: Colors.black,
+                                    overflow: TextOverflow.visible, // Obcięcie, jeśli tekst jest zbyt długi
                                   ),
                                 ),
                               ),
@@ -150,20 +159,19 @@ class _TestTTS extends State<MyTest>{
                               });
                             }
                           },
-
                           icon: const Icon(
                             Icons.arrow_drop_down,
                             color: Colors.blue,
-                            size: 30,
+                            size: 50,
                           ),
-                          underline: Container(
-                            height: 1,
-                            color: Colors.blue,
-                          ),
+                          isExpanded: true, // Rozciąga DropdownButton na całą szerokość dostępnego obszaru
+                          dropdownColor: Colors.white, // Opcjonalnie: kolor tła rozwijanego menu
                         ),
                       ),
                     ],
                   ),
+
+
                   Positioned(
                     bottom: 10, // Odległość od dołu ekranu
                     left: 16,   // Odległość od lewej krawędzi
