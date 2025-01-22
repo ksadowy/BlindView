@@ -2,14 +2,20 @@ import cv2
 import pyrealsense2 as rs
 import numpy as np
 import time
+
+from fontTools.ttx import process
 from ultralytics import YOLO
 import requests
 
+processing_lock = None
+MIN_OBJECT_DISTANCE = 1.0
+MIN_MARKER_DISTANCE = 0.5
+
 # Wczytanie modeli YOLO
 # Model do wykrywania ludzi
-people_model = YOLO("models/ludzie.pt")
+people_model = YOLO("ludzie.pt")
 # Model do wykrywania klamek
-doorknob_model = YOLO("models/klamki.pt")
+doorknob_model = YOLO("klamki.pt")
 
 # Inicjalizacja kamery RealSense
 pipeline = rs.pipeline()
@@ -127,7 +133,12 @@ def detect_objects(model, frame, depth_frame):
     Wykrywanie obiektów na klatce za pomocą modelu YOLO.
     Zwraca listę wykrytych obiektów i klatkę z naniesionymi detekcjami.
     """
-    global last_detected_time, yolo_cooldown
+    global processing_lock, last_detected_time, yolo_cooldown
+
+    if processing_lock is not None and processing_lock != "objects":
+        return frame, []
+
+    processing_lock = "objects"
 
     results = model.predict(source=frame, conf=0.5, iou=0.5, classes=None, device="cpu")
     detections = results[0].boxes.xyxy.cpu().numpy()  # Koordynaty ramki
@@ -149,6 +160,9 @@ def detect_objects(model, frame, depth_frame):
         distance = f"{depth_value:.2f}m" if depth_value != 0 else "Unknown"
         steps = f"{round(depth_value * 1.31)} steps" if depth_value != 0 else "Unknown"
 
+        if depth_value < MIN_OBJECT_DISTANCE:
+            continue
+
         angle = calculate_angle(frame.shape[1], center_x)
         direction = angle_to_direction(angle)
 
@@ -166,12 +180,18 @@ def detect_objects(model, frame, depth_frame):
             # Aktualizacja danych w Flasku
             update_flask_data(object_name, steps, direction)
 
+    processing_lock = None
     return frame, detections
 
 
 
 def detect_markers(frame, depth_frame):
-    global previous_marker, previous_detected, frames_processed, frames_with_marker
+    global processing_lock, previous_marker, previous_detected, frames_processed, frames_with_marker
+
+    if processing_lock is not None and processing_lock != "markers":
+        return frame, False
+
+    processing_lock = "markers"
 
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     blurred = cv2.medianBlur(gray, 5)
@@ -278,6 +298,9 @@ def detect_markers(frame, depth_frame):
         distance = f"{depth_value:.2f}m" if depth_value != 0 else "Unknown"
         steps = f"{round(depth_value * 1.31)} steps" if depth_value != 0 else "Unknown"
 
+        if depth_value < MIN_MARKER_DISTANCE:
+            return frame, False
+
         if depth_value <= 5:
             unique_inner_counts = len(inner_circles)
 
@@ -314,6 +337,7 @@ def detect_markers(frame, depth_frame):
 
     frames_processed += 1
 
+    processing_lock = None
     return frame, detected_markers
 
 
