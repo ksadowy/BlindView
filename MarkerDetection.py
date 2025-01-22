@@ -2,6 +2,13 @@ import cv2
 import pyrealsense2 as rs
 import numpy as np
 import time
+from ultralytics import YOLO
+
+# Wczytanie modeli YOLO
+# Model do wykrywania ludzi
+people_model = YOLO("models/ludzie.pt")
+# Model do wykrywania klamek
+doorknob_model = YOLO("models/klamki.pt")
 
 # Inicjalizacja kamery RealSense
 pipeline = rs.pipeline()
@@ -21,7 +28,7 @@ marker_dict = {
 }
 
 # Cooldown na otrzymywanie informacji o tym samym markerze (w sekundach)
-marker_cooldown = 0
+marker_cooldown = 10
 last_detected_time = {}
 
 # Zmienne do kontrolowania wypisywania statusu w konsoli
@@ -91,6 +98,27 @@ def detect_inner_circles(binary_image):
         detected_circles = np.uint16(np.around(detected_circles))
         return detected_circles[0, :]
     return []
+
+
+def detect_objects(model, frame):
+    """
+    Wykrywanie obiektów na klatce za pomocą modelu YOLO.
+    Zwraca listę wykrytych obiektów i klatkę z naniesionymi detekcjami.
+    """
+    results = model.predict(source=frame, conf=0.5, iou=0.5, classes=None, device="cpu")
+    detections = results[0].boxes.xyxy.cpu().numpy()  # Koordynaty ramki
+    confidences = results[0].boxes.conf.cpu().numpy()  # Pewność detekcji
+    class_ids = results[0].boxes.cls.cpu().numpy()  # Id klasy
+
+    # Rysowanie detekcji na klatce
+    for (box, confidence, class_id) in zip(detections, confidences, class_ids):
+        x1, y1, x2, y2 = map(int, box)
+        label = f"ID: {int(class_id)} ({confidence:.2f})"
+        color = (0, 255, 0) if model == people_model else (255, 0, 0)  # Kolor zależny od modelu
+        cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
+        cv2.putText(frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+
+    return frame, detections
 
 
 def detect_markers(frame, depth_frame):
@@ -178,7 +206,7 @@ def detect_markers(frame, depth_frame):
             # Przycinanie obrazu binarnego do ROI
             roi = binary[y_start:y_end, x_start:x_end]
 
-            # Wizualizacja ROI na obrazie (opcjonalnie)
+            # Wizualizacja ROI na obrazie
             cv2.rectangle(frame, (x_start, y_start), (x_end, y_end), (255, 255, 0), 2)
 
             # Wykrywanie małych okręgów w ROI
@@ -220,21 +248,21 @@ def detect_markers(frame, depth_frame):
                     (second_largest_circle[0], second_largest_circle[1], unique_inner_counts, marker_name,
                      second_largest_circle[5], color, distance))
                 detected_markers = True
-                frames_with_marker += 1  # Zwiększamy licznik klatek, gdy marker jest wykryty
+                frames_with_marker += 1
 
                 if not previous_detected or (previous_marker != marker_name):
                     angle = calculate_angle(frame.shape[1], second_largest_circle[0])
                     direction = angle_to_direction(angle)
                     print(
                         f"{marker_name} at ({round(second_largest_circle[0])}, {round(second_largest_circle[1])}), Distance: {distance},"
-                        f"{steps} - {unique_inner_counts} circles, Angle: {angle:.2f} degrees, Direction: {direction}")
+                        f"{steps}, Angle: {angle:.2f} degrees, Direction: {direction}")
 
                 previous_marker = marker_name
                 previous_detected = True
             else:
                 previous_detected = False
 
-    frames_processed += 1  # Zwiększamy licznik przetworzonych klatek
+    frames_processed += 1
 
     return frame, detected_markers
 
@@ -253,11 +281,16 @@ try:
             depth_image = np.asanyarray(depth_frame.get_data())
             color_image = np.asanyarray(color_frame.get_data())
 
+            # Wykrywanie markerow
             output_image, found_marker = detect_markers(color_image, depth_frame)
-            cv2.imshow('Marker Detection', output_image)
+            # Wykrywanie ludzi
+            output_image, _ = detect_objects(people_model, output_image)
+            # Wykrywanie klamek
+            output_image, _ = detect_objects(doorknob_model, output_image)
+            cv2.imshow('Detection', output_image)
 
-            if found_marker:
-                print(f"Marker found. Paused. Detected on {frames_with_marker} out of {frames_processed} frames.")
+            #if found_marker:
+             #   print(f"Marker found. Paused. Detected on {frames_with_marker} out of {frames_processed} frames.")
 
         key = cv2.waitKey(1) & 0xFF
         if key == ord('q'):

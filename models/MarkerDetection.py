@@ -182,7 +182,7 @@ def detect_markers(frame, depth_frame):
     # Sortowanie okręgów po rozmiarze
     valid_circles.sort(key=lambda c: c[2] * c[3], reverse=True)
 
-    return frame, False  # Reszta logiki markerów pozostaje bez zmian
+    return frame, False
 
 
 try:
