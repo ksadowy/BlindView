@@ -32,6 +32,7 @@ marker_dict = {
 
 # Cooldown na otrzymywanie informacji o tym samym markerze (w sekundach)
 marker_cooldown = 10
+yolo_cooldown = 10
 last_detected_time = {}
 
 # Zmienne do kontrolowania wypisywania statusu w konsoli
@@ -121,11 +122,13 @@ def detect_inner_circles(binary_image):
     return []
 
 
-def detect_objects(model, frame):
+def detect_objects(model, frame, depth_frame):
     """
     Wykrywanie obiektów na klatce za pomocą modelu YOLO.
     Zwraca listę wykrytych obiektów i klatkę z naniesionymi detekcjami.
     """
+    global last_detected_time, yolo_cooldown
+
     results = model.predict(source=frame, conf=0.5, iou=0.5, classes=None, device="cpu")
     detections = results[0].boxes.xyxy.cpu().numpy()  # Koordynaty ramki
     confidences = results[0].boxes.conf.cpu().numpy()  # Pewność detekcji
@@ -139,7 +142,32 @@ def detect_objects(model, frame):
         cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
         cv2.putText(frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 
+        center_x = (x1 + x2) // 2
+        center_y = (y1 + y2) // 2
+
+        depth_value = depth_frame.get_distance(center_x, center_y)
+        distance = f"{depth_value:.2f}m" if depth_value != 0 else "Unknown"
+        steps = f"{round(depth_value * 1.31)} steps" if depth_value != 0 else "Unknown"
+
+        angle = calculate_angle(frame.shape[1], center_x)
+        direction = angle_to_direction(angle)
+
+        object_name = "Człowiek" if model == people_model else "Klamka"
+
+        current_time = time.time()
+        if object_name not in last_detected_time or (current_time - last_detected_time[object_name]) > yolo_cooldown:
+            last_detected_time[object_name] = current_time
+
+            print(
+                f"{object_name} detected at ({center_x}, {center_y}), Distance: {distance}, "
+                f"{steps}, Angle: {angle:.2f} degrees, Direction: {direction}"
+            )
+
+            # Aktualizacja danych w Flasku
+            update_flask_data(object_name, steps, direction)
+
     return frame, detections
+
 
 
 def detect_markers(frame, depth_frame):
@@ -306,9 +334,9 @@ try:
             # Wykrywanie markerow
             output_image, found_marker = detect_markers(color_image, depth_frame)
             # Wykrywanie ludzi
-            output_image, _ = detect_objects(people_model, output_image)
+            output_image, _ = detect_objects(people_model, output_image, depth_frame)
             # Wykrywanie klamek
-            output_image, _ = detect_objects(doorknob_model, output_image)
+            output_image, _ = detect_objects(doorknob_model, output_image, depth_frame)
             cv2.imshow('Detection', output_image)
 
             #if found_marker:
