@@ -3,6 +3,7 @@ import pyrealsense2 as rs
 import numpy as np
 import time
 from ultralytics import YOLO
+import requests
 
 # Wczytanie modeli YOLO
 # Model do wykrywania ludzi
@@ -21,10 +22,10 @@ paused = False
 
 # Słownik dla markerów
 marker_dict = {
-    1: "Marker 1",
-    2: "Marker 2",
-    3: "Marker 3",
-    4: "Marker 4"
+    1: "Krzesło", # Marker 1
+    2: "Ławka", # Marker 2
+    3: "Biurko", # Marker 3
+    4: "Szafa"  # Marker 4
 }
 
 # Cooldown na otrzymywanie informacji o tym samym markerze (w sekundach)
@@ -64,6 +65,24 @@ def angle_to_direction(angle):
     else:
         direction = "Unknown"
     return direction
+
+
+def update_flask_data(new_marker_name, new_steps, new_direction):
+    url = "http://127.0.0.1:5000/api/update"  # Endpoint do aktualizacji danych
+    payload = {
+        "marker_name": new_marker_name,
+        "steps": new_steps,
+        "direction": new_direction
+    }
+    try:
+        response = requests.post(url, json=payload)
+        if response.status_code == 200:
+            print("API updated")
+        else:
+            print("Error during updating flask's API")
+    except Exception as e:
+        print(f"Connection error: {e}")
+
 
 
 def is_duplicate(circle1, circle2, center_tolerance=15, size_tolerance=0.15):
@@ -256,6 +275,7 @@ def detect_markers(frame, depth_frame):
                     print(
                         f"{marker_name} at ({round(second_largest_circle[0])}, {round(second_largest_circle[1])}), Distance: {distance},"
                         f"{steps}, Angle: {angle:.2f} degrees, Direction: {direction}")
+                    update_flask_data(marker_name, steps, direction)
 
                 previous_marker = marker_name
                 previous_detected = True

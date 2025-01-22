@@ -28,7 +28,7 @@ marker_dict = {
 }
 
 # Cooldown na otrzymywanie informacji o tym samym markerze (w sekundach)
-marker_cooldown = 0
+marker_cooldown = 10
 last_detected_time = {}
 
 # Zmienne do kontrolowania wypisywania statusu w konsoli
