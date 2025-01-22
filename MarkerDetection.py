@@ -25,7 +25,9 @@ marker_dict = {
     1: "Krzesło", # Marker 1
     2: "Ławka", # Marker 2
     3: "Biurko", # Marker 3
-    4: "Szafa"  # Marker 4
+    4: "Szafa", # Marker 4
+    5: "Kosz na śmieci" # Marker 5
+    # Do dodania markery
 }
 
 # Cooldown na otrzymywanie informacji o tym samym markerze (w sekundach)
