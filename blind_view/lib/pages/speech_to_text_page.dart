@@ -1,6 +1,8 @@
 // Main imports
+import 'dart:async';
+
 import 'package:blind_view/streams/generate_stream.dart';
-import 'package:blind_view/extensions/context_extension.dart';
+import 'package:blind_view/services/Data_service.dart';
 import 'package:blind_view/l10n/l10n.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -25,9 +27,13 @@ class _SpeechToTextPageState extends State<SpeechToTextPage> {
   final SpeechService _speechService = SpeechService();
   final ChatGPTService _chatGPTService = ChatGPTService("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");
 
+  late final DataService _dataService;
+  StreamSubscription<Map<String, dynamic>>? _dataSubscription;
+
   // State variables
   String _lastWords = '';
   String _chatGPTResponse = '';
+  String _fetchedData = '';
 
   @override
   void initState() {
@@ -35,11 +41,40 @@ class _SpeechToTextPageState extends State<SpeechToTextPage> {
     // Initialize services and streams
     GenerateStreams.languageStream.add(widget.selectedLocal);
     _speechService.initialize();
+
+    // Initialize DataService
+    _dataService = DataService(baseUrl: 'https://your-api-base-url.com');
+    _dataService.startService();
+
+    // Listen to data stream
+    _dataSubscription = _dataService.dataStream.listen((data) {
+      _processSensorData(data);
+    });
+
   }
+
+  void _processSensorData(Map<String, dynamic> sensorData) {
+    final prompt = "Provide navigation instructions for a visually impaired user "
+        "based on this sensor data: $sensorData. "
+        "Give clear, concise directions with steps.";
+
+    _chatGPTService.sendMessageToChatGPT(prompt).then((response) {
+      if (mounted) {
+        setState(() => _chatGPTResponse = response);
+      }
+      _speechService.speak(response);
+    }).catchError((error) {
+      print('ChatGPT Error: $error');
+      _speechService.speak("Error generating directions");
+    });
+  }
+
 
   @override
   void dispose() {
-    // Dispose resources to avoid memory leaks
+    // Clean up data service and subscription
+    _dataSubscription?.cancel();
+    _dataService.stopService();
     GenerateStreams.languageStream.close();
     _speechService.dispose();
     super.dispose();
